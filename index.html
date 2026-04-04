@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoGroup | Legal BI - Contencioso</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .sidebar-gradient { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .table-container { max-height: 600px; overflow-y: auto; }
+        thead th { position: sticky; top: 0; z-index: 20; background-color: #1e293b !important; cursor: pointer; }
+        thead th:hover { background-color: #334155 !important; }
+        .chart-container { position: relative; height: 300px; width: 100%; }
+        .clickable-item { cursor: pointer; transition: all 0.2s; }
+        .clickable-item:hover { background-color: #f1f5f9; transform: translateX(4px); }
+        .filter-active { border: 2px solid #3b82f6 !important; background-color: #eff6ff !important; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        /* Dropdown Customizado para Sidebar Escura */
+        .dropdown-content { display: none; position: absolute; background-color: #1e293b; min-width: 100%; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); z-index: 50; border: 1px solid #334155; border-radius: 0.5rem; max-height: 200px; overflow-y: auto; margin-top: 4px; }
+        .dropdown-content.show { display: block; }
+        .dropdown-content::-webkit-scrollbar { width: 4px; }
+        .dropdown-content::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30">
+            <div class="mb-10">
+                <h1 class="text-2xl font-bold tracking-tight text-blue-400 italic">GoGroup <span class="text-white font-light text-sm">LegalBI</span></h1>
+            </div>
+
+            <nav class="flex-1 space-y-6 overflow-y-visible pr-2">
+                <!-- BUSCA RÁPIDA -->
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Busca Geral</p>
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+                            <input type="text" id="sidebarSearch" onkeyup="atualizarDashboard()" placeholder="Nº Processo ou Empresa" class="w-full bg-slate-900 border border-slate-600 rounded p-2 pl-8 text-xs focus:outline-none focus:border-blue-500 transition-colors">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTROS DE STATUS E RISCO -->
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Status e Risco</p>
+                    <div class="space-y-3">
+                        <select id="filterStatus" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
+                            <option value="">Todos os Status</option>
+                            <option value="Ativo">Ativo</option>
+                            <option value="Encerrado">Encerrado</option>
+                            <option value="Suspenso">Suspenso</option>
+                        </select>
+                        
+                        <select id="filterRisco" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
+                            <option value="">Todos os Riscos</option>
+                            <option value="Provável">Provável</option>
+                            <option value="Possível">Possível</option>
+                            <option value="Remota">Remota</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- FILTROS TEMPORAIS MÚLTIPLOS (DROPDOWN) -->
+                <div>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-2 tracking-widest">Período de Análise</p>
+                    
+                    <!-- Dropdown Anos -->
+                    <div class="relative mb-3">
+                        <button onclick="toggleDropdown('yearDropdown')" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 flex justify-between items-center hover:bg-slate-700">
+                            <span id="yearLabel">Anos (Múltiplo)</span>
+                            <i class="fas fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <div id="yearDropdown" class="dropdown-content">
+                            <!-- Gerado via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Dropdown Meses -->
+                    <div class="relative">
+                        <button onclick="toggleDropdown('monthDropdown')" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 flex justify-between items-center hover:bg-slate-700">
+                            <span id="monthLabel">Meses (Múltiplo)</span>
+                            <i class="fas fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <div id="monthDropdown" class="dropdown-content">
+                            <!-- Gerado via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILTROS ATIVOS -->
+                <div id="activeFiltersSection" class="hidden pt-4 border-t border-slate-700">
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-2 tracking-widest">Filtros Ativos</p>
+                    <button onclick="limparFiltrosDinamicos()" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1.5 rounded hover:bg-red-500/40 transition w-full mb-2 flex justify-center items-center">
+                        Limpar Seleções <i class="fas fa-times ml-2"></i>
+                    </button>
+                    <div id="filterBadges" class="space-y-1"></div>
+                </div>
+            </nav>
+
+            <div class="mt-auto pt-6 border-t border-slate-700 text-[10px] text-gray-500">
+                <p>© 2026 GoGroup Data Engine</p>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto p-8 custom-scroll relative z-10" onclick="closeDropdowns(event)">
+            
+            <header class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Dashboard Executivo</h2>
+                    <p class="text-gray-500 text-sm italic">Dados Integrados e Conectados</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="carregarDadosAPI()" class="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
+                        <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
+                    </button>
+                    <button class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 shadow-md flex items-center transition">
+                        <i class="fas fa-file-pdf mr-2"></i> Exportar BI
+                    </button>
+                </div>
+            </header>
+
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-blue-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help" title="Soma total do valor da causa de todos os processos que atendem aos filtros."></i>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Exposição Atual</p>
+                    <h3 id="kpi-total" class="text-2xl font-bold text-slate-800">R$ 0,00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-red-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-red-500 cursor-help" title="Soma financeira dos processos classificados com risco 'Provável'."></i>
+                    <p class="text-[10px] text-red-600 font-bold uppercase mb-1 tracking-wider">Cenário Provável</p>
+                    <h3 id="kpi-provavel" class="text-2xl font-bold text-slate-800">R$ 0,00</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-slate-400 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-slate-500 cursor-help" title="Contagem total de números únicos de processos na base atual."></i>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Volume Processual</p>
+                    <h3 id="kpi-count" class="text-2xl font-bold text-slate-800">0</h3>
+                </div>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-green-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-green-500 cursor-help" title="Exposição Atual dividida pelo Volume Processual."></i>
+                    <p class="text-[10px] text-green-600 font-bold uppercase mb-1 tracking-wider">Média por Causa</p>
+                    <h3 id="kpi-media" class="text-2xl font-bold text-slate-800">R$ 0,00</h3>
+                </div>
+            </div>
+
+            <!-- QUADRO COMPARATIVO -->
+            <div class="bg-white p-6 rounded-xl card-shadow mb-8 border border-blue-100 bg-gradient-to-r from-white to-blue-50 relative">
+                <i class="fas fa-info-circle absolute top-4 right-4 text-gray-400 hover:text-blue-600 cursor-help text-lg" title="Compara os indicadores do período selecionado com o ano imediatamente anterior (mesmos meses)."></i>
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-slate-700"><i class="fas fa-balance-scale mr-2 text-blue-600"></i> Comparativo de Períodos</h4>
+                    <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase font-bold mr-6">Base: Filtros Atuais</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="flex flex-col border-r border-blue-100 pr-4">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Volume de Entradas</span>
+                        <div class="flex items-end gap-3">
+                            <span id="compare-vol-val" class="text-3xl font-black text-slate-800">0</span>
+                            <span id="compare-vol-perc" class="text-sm font-bold pb-1 text-gray-400">0%</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col border-r border-blue-100 pr-4">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Impacto Financeiro</span>
+                        <div class="flex items-end gap-3">
+                            <span id="compare-fin-val" class="text-3xl font-black text-slate-800">R$ 0</span>
+                            <span id="compare-fin-perc" class="text-sm font-bold pb-1 text-gray-400">0%</span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Taxa de Risco Provável</span>
+                        <div class="flex items-end gap-3">
+                            <span id="compare-risk-val" class="text-3xl font-black text-slate-800">0%</span>
+                            <span id="compare-risk-perc" class="text-[10px] text-gray-500 font-medium pb-1">0 processos</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <!-- GRÁFICO 1: EVOLUÇÃO (BARRAS + LINHA) -->
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help" title="Compara o valor financeiro do ano mais recente (Azul) com o ano anterior (Laranja). As linhas representam a curva de tendência."></i>
+                    <h4 class="font-bold text-slate-700 mb-4"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Ano Atual vs Anterior)</h4>
+                    <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
+                </div>
+                
+                <!-- GRÁFICO 2: MATÉRIAS (INTERATIVO) -->
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-indigo-500 cursor-help" title="Mostra o volume por matéria. CLIQUE em uma barra para filtrar todo o dashboard por essa matéria."></i>
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-slate-700"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Volume por Matéria</h4>
+                        <span id="badgeMateria" class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold hidden uppercase mr-6">Filtro Ativo</span>
+                    </div>
+                    <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
+                    <p class="text-center text-[10px] text-gray-400 mt-2 italic">Dica: Clique em uma barra para filtrar os dados</p>
+                </div>
+            </div>
+
+            <!-- RANKINGS E RESUMOS -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 cursor-help" title="Os 5 processos com maior Valor da Causa dentro dos filtros aplicados."></i>
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Top 5 Causas (Valor)</h4>
+                    <ul id="top-causas" class="space-y-3 text-xs"></ul>
+                </div>
+                
+                <!-- TOP UF COMPLETO -->
+                <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 cursor-help" title="Listagem de TODAS as UFs presentes na base filtrada, ordenadas por valor financeiro total."></i>
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Exposição por UF (Completo)</h4>
+                    <div id="top-uf" class="flex-1 space-y-2 text-xs text-gray-600 overflow-y-auto pr-2 custom-scroll">
+                        <!-- UFs geradas dinamicamente -->
+                    </div>
+                </div>
+                
+                <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 cursor-help" title="Resumo do volume e valor financeiro gerenciado por cada escritório parceiro."></i>
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Performance por Escritório</h4>
+                    <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto pr-2 text-xs custom-scroll"></div>
+                </div>
+            </div>
+
+            <!-- TABELA INTEGRAL -->
+            <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
+                <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
+                    <h4 class="font-bold text-slate-800">Base Consolidada de Processos <span id="table-count" class="text-blue-600 ml-2"></span></h4>
+                    <span class="text-[10px] text-gray-400 italic mr-8">Clique nos títulos das colunas para alternar ordenação</span>
+                    <i class="fas fa-info-circle absolute top-5 right-5 text-gray-400 cursor-help" title="Tabela contendo todos os registros que atendem aos filtros atuais. Clique no cabeçalho para ordenar."></i>
+                </div>
+                
+                <div class="table-container overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse whitespace-nowrap" id="mainTable">
+                        <thead class="text-white text-[10px] uppercase tracking-tighter">
+                            <tr>
+                                <th onclick="ordenarTabela('Status')" class="px-4 py-4 border-r border-slate-700">Status</th>
+                                <th onclick="ordenarTabela('Polo')" class="px-4 py-4 border-r border-slate-700">Polo</th>
+                                <th onclick="ordenarTabela('Número único')" class="px-4 py-4 border-r border-slate-700">Número Único</th>
+                                <th onclick="ordenarTabela('Data de Distribuição')" class="px-4 py-4 border-r border-slate-700">Distribuição</th>
+                                <th onclick="ordenarTabela('EMPRESA DO GRUPO')" class="px-4 py-4 border-r border-slate-700">Empresa</th>
+                                <th onclick="ordenarTabela('Escritório Responsável pela Demanda')" class="px-4 py-4 border-r border-slate-700">Escritório</th>
+                                <th onclick="ordenarTabela('Matéria')" class="px-4 py-4 border-r border-slate-700">Matéria</th>
+                                <th onclick="ordenarTabela('Valor da causa')" class="px-4 py-4 border-r border-slate-700 text-right">Causa (R$)</th>
+                                <th onclick="ordenarTabela('Risk Assessment (probabilidade de PERDA)')" class="px-4 py-4 border-r border-slate-700 text-center">Risco</th>
+                                <th onclick="ordenarTabela('UF')" class="px-4 py-4 text-center">UF</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody" class="text-[11px] divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // URL da API (Ajuste conforme necessário)
+        const API_URL = "http://127.0.0.1:8000/api/dashboard";
+        let DADOS_ORIGINAIS = [];
+        let chartEvolucao, chartMaterias;
+        let ordenacaoAtual = { coluna: '', dir: 1 };
+        
+        const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+        let filtrosDinamicos = {
+            escritorio: null,
+            uf: null,
+            materia: null
+        };
+
+        // --- LÓGICA DE DROPDOWNS ---
+        function toggleDropdown(id) {
+            const dropdown = document.getElementById(id);
+            const isShown = dropdown.classList.contains('show');
+            document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+            if (!isShown) dropdown.classList.add('show');
+        }
+
+        function closeDropdowns(event) {
+            if (!event.target.closest('.relative')) {
+                document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
+            }
+        }
+
+        function toggleAllFilters(className, isChecked) {
+            document.querySelectorAll('.' + className).forEach(el => el.checked = isChecked);
+            atualizarDashboard();
+        }
+
+        function checkSelectAllState(className, selectAllId) {
+            const all = document.querySelectorAll('.' + className).length;
+            const checked = document.querySelectorAll('.' + className + ':checked').length;
+            const selectAllEl = document.getElementById(selectAllId);
+            if(selectAllEl) selectAllEl.checked = (all === checked && all > 0);
+            atualizarDashboard();
+        }
+
+        // --- INICIALIZAÇÃO DE DADOS ---
+        async function carregarDadosAPI() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                DADOS_ORIGINAIS = data.processos || [];
+            } catch (e) {
+                console.warn("API Offline, usando dados de demonstração.");
+                // Mockup estendido para suportar múltiplos anos e matérias
+                DADOS_ORIGINAIS = [
+                    {'Status': 'Ativo', 'Polo': 'Passivo', 'Número único': '001-2024.1', 'Data de Distribuição': '2024-01-15', 'EMPRESA DO GRUPO': 'GoLog S.A', 'Escritório Responsável pela Demanda': 'Almeida Adv.', 'Matéria': 'Trabalhista', 'Valor da causa': 150000, 'Risk Assessment (probabilidade de PERDA)': 'Provável', 'UF': 'SP', 'Anos Distribuição': '2024'},
+                    {'Status': 'Ativo', 'Polo': 'Ativo', 'Número único': '002-2024.2', 'Data de Distribuição': '2024-02-10', 'EMPRESA DO GRUPO': 'GoTech Ltda', 'Escritório Responsável pela Demanda': 'Silva & Silva', 'Matéria': 'Tributário', 'Valor da causa': 320000, 'Risk Assessment (probabilidade de PERDA)': 'Possível', 'UF': 'RJ', 'Anos Distribuição': '2024'},
+                    {'Status': 'Ativo', 'Polo': 'Passivo', 'Número único': '003-2024.5', 'Data de Distribuição': '2024-05-20', 'EMPRESA DO GRUPO': 'GoLog S.A', 'Escritório Responsável pela Demanda': 'Almeida Adv.', 'Matéria': 'Consumidor', 'Valor da causa': 25000, 'Risk Assessment (probabilidade de PERDA)': 'Remota', 'UF': 'MG', 'Anos Distribuição': '2024'},
+                    {'Status': 'Encerrado', 'Polo': 'Passivo', 'Número único': '004-2023.1', 'Data de Distribuição': '2023-01-15', 'EMPRESA DO GRUPO': 'GoLog S.A', 'Escritório Responsável pela Demanda': 'Almeida Adv.', 'Matéria': 'Trabalhista', 'Valor da causa': 140000, 'Risk Assessment (probabilidade de PERDA)': 'Provável', 'UF': 'SP', 'Anos Distribuição': '2023'},
+                    {'Status': 'Ativo', 'Polo': 'Passivo', 'Número único': '005-2023.2', 'Data de Distribuição': '2023-02-12', 'EMPRESA DO GRUPO': 'GoTech Ltda', 'Escritório Responsável pela Demanda': 'Silva & Silva', 'Matéria': 'Tributário', 'Valor da causa': 280000, 'Risk Assessment (probabilidade de PERDA)': 'Possível', 'UF': 'RJ', 'Anos Distribuição': '2023'},
+                    {'Status': 'Ativo', 'Polo': 'Passivo', 'Número único': '006-2022.5', 'Data de Distribuição': '2022-05-20', 'EMPRESA DO GRUPO': 'GoLog S.A', 'Escritório Responsável pela Demanda': 'Costa Advogados', 'Matéria': 'Cível', 'Valor da causa': 45000, 'Risk Assessment (probabilidade de PERDA)': 'Remota', 'UF': 'BA', 'Anos Distribuição': '2022'}
+                ];
+            }
+            initFiltrosDropwdown();
+            atualizarDashboard();
+        }
+
+        function initFiltrosDropwdown() {
+            // Anos Dinâmicos (Puxa todos os anos da base)
+            const anosPresentes = [...new Set(DADOS_ORIGINAIS.map(p => {
+                if (p['Anos Distribuição']) return String(p['Anos Distribuição']);
+                if (p['Data de Distribuição']) return String(p['Data de Distribuição']).split('-')[0];
+                return null;
+            }))].filter(a => a !== null).sort((a, b) => b - a);
+
+            const yearContainer = document.getElementById('yearDropdown');
+            yearContainer.innerHTML = `
+                <label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-white text-xs font-bold border-b border-slate-600 mb-1 pb-2">
+                    <input type="checkbox" id="selectAllYears" onchange="toggleAllFilters('filter-year', this.checked)" class="mr-3 accent-blue-500">
+                    Selecionar Todos
+                </label>
+            `;
+            anosPresentes.forEach((ano, index) => {
+                const isChecked = index < 2 ? 'checked' : ''; // Deixa os 2 últimos anos marcados por padrão
+                yearContainer.innerHTML += `
+                    <label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-gray-300 text-xs">
+                        <input type="checkbox" value="${ano}" onchange="checkSelectAllState('filter-year', 'selectAllYears')" class="mr-3 filter-year accent-blue-500" ${isChecked}>
+                        ${ano}
+                    </label>
+                `;
+            });
+
+            // Meses Fixos
+            const monthContainer = document.getElementById('monthDropdown');
+            monthContainer.innerHTML = `
+                <label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-white text-xs font-bold border-b border-slate-600 mb-1 pb-2">
+                    <input type="checkbox" id="selectAllMonths" onchange="toggleAllFilters('filter-month', this.checked)" class="mr-3 accent-blue-500" checked>
+                    Selecionar Todos
+                </label>
+            `;
+            NOMES_MESES.forEach((mes, i) => {
+                const mesNum = (i + 1).toString().padStart(2, '0');
+                monthContainer.innerHTML += `
+                    <label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-gray-300 text-xs">
+                        <input type="checkbox" value="${mesNum}" onchange="checkSelectAllState('filter-month', 'selectAllMonths')" class="mr-3 filter-month accent-blue-500" checked>
+                        ${mes}
+                    </label>
+                `;
+            });
+
+            // Update 'Select All' initial states
+            const allYears = document.querySelectorAll('.filter-year').length;
+            const checkedYears = document.querySelectorAll('.filter-year:checked').length;
+            const selectAllYearsEl = document.getElementById('selectAllYears');
+            if (selectAllYearsEl) selectAllYearsEl.checked = (allYears === checkedYears && allYears > 0);
+        }
+
+        // --- FILTROS DINÂMICOS (CLIQUES) ---
+        function setFiltroDinamico(tipo, valor) {
+            filtrosDinamicos[tipo] = (filtrosDinamicos[tipo] === valor) ? null : valor;
+            atualizarDashboard();
+        }
+
+        function limparFiltrosDinamicos() {
+            filtrosDinamicos = { escritorio: null, uf: null, materia: null };
+            document.getElementById('filterStatus').value = "";
+            document.getElementById('filterRisco').value = "";
+            document.querySelectorAll('.filter-year').forEach(el => el.checked = true);
+            document.querySelectorAll('.filter-month').forEach(el => el.checked = true);
+            document.getElementById('sidebarSearch').value = "";
+            
+            if(document.getElementById('selectAllYears')) document.getElementById('selectAllYears').checked = true;
+            if(document.getElementById('selectAllMonths')) document.getElementById('selectAllMonths').checked = true;
+
+            atualizarDashboard();
+        }
+
+        // --- ATUALIZAÇÃO PRINCIPAL ---
+        function atualizarDashboard() {
+            const busca = document.getElementById('sidebarSearch').value.toLowerCase();
+            const status = document.getElementById('filterStatus').value;
+            const risco = document.getElementById('filterRisco').value;
+            
+            const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(el => el.value);
+            const mesesSel = Array.from(document.querySelectorAll('.filter-month:checked')).map(el => el.value);
+
+            // Atualizar Labels dos Dropdowns
+            document.getElementById('yearLabel').innerText = anosSel.length ? `${anosSel.length} Anos` : "Selecionar Anos";
+            document.getElementById('monthLabel').innerText = mesesSel.length ? `${mesesSel.length} Meses` : "Selecionar Meses";
+
+            let filtrados = DADOS_ORIGINAIS.filter(p => {
+                const matchBusca = !busca || JSON.stringify(p).toLowerCase().includes(busca);
+                const matchStatus = !status || p['Status'] === status;
+                const matchRisco = !risco || String(p['Risk Assessment (probabilidade de PERDA)']).includes(risco);
+                
+                let matchData = true;
+                const anoP = p['Anos Distribuição'] ? String(p['Anos Distribuição']) : (p['Data de Distribuição'] ? String(p['Data de Distribuição']).split('-')[0] : null);
+                const mesP = p['Data de Distribuição'] ? String(p['Data de Distribuição']).split('-')[1] : null;
+
+                if(anosSel.length > 0 && (!anoP || !anosSel.includes(anoP))) matchData = false;
+                if(mesesSel.length > 0 && (!mesP || !mesesSel.includes(mesP))) matchData = false;
+
+                const matchEscritorio = !filtrosDinamicos.escritorio || p['Escritório Responsável pela Demanda'] === filtrosDinamicos.escritorio;
+                const matchUF = !filtrosDinamicos.uf || p['UF'] === filtrosDinamicos.uf;
+                const matchMateria = !filtrosDinamicos.materia || p['Matéria'] === filtrosDinamicos.materia;
+
+                return matchBusca && matchStatus && matchRisco && matchData && matchEscritorio && matchUF && matchMateria;
+            });
+
+            atualizarComparativo(filtrados, anosSel, mesesSel);
+            atualizarBadgesFiltros(status, risco, anosSel, mesesSel);
+
+            // KPIs
+            const total = filtrados.reduce((acc, p) => acc + (Number(p['Valor da causa']) || 0), 0);
+            const provavel = filtrados.filter(p => String(p['Risk Assessment (probabilidade de PERDA)']).includes('Provável'))
+                                      .reduce((acc, p) => acc + (Number(p['Valor da causa']) || 0), 0);
+            
+            document.getElementById('kpi-total').innerText = `R$ ${total.toLocaleString('pt-BR')}`;
+            document.getElementById('kpi-provavel').innerText = `R$ ${provavel.toLocaleString('pt-BR')}`;
+            document.getElementById('kpi-count').innerText = filtrados.length;
+            document.getElementById('kpi-media').innerText = `R$ ${(filtrados.length ? total/filtrados.length : 0).toLocaleString('pt-BR', {maximumFractionDigits: 0})}`;
+            document.getElementById('table-count').innerText = `(${filtrados.length} itens)`;
+
+            // Componentes
+            renderizarTabela(filtrados);
+            renderizarRankings(filtrados);
+            renderizarEscritorios(filtrados);
+            renderizarGraficos(filtrados, anosSel, mesesSel);
+        }
+
+        function atualizarBadgesFiltros(status, risco, anos, meses) {
+            const section = document.getElementById('activeFiltersSection');
+            const badges = document.getElementById('filterBadges');
+            badges.innerHTML = '';
+            let hasActive = false;
+            
+            const addBadge = (val, label) => {
+                if(val && (Array.isArray(val) ? val.length > 0 : true)) {
+                    hasActive = true;
+                    const text = Array.isArray(val) ? val.join(',') : val;
+                    badges.innerHTML += `<div class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-1 rounded flex justify-between items-center truncate mb-1 border border-blue-500/30"><span>${label}: ${text}</span></div>`;
+                }
+            };
+
+            if(status) addBadge(status, "Status");
+            if(risco) addBadge(risco, "Risco");
+            if(filtrosDinamicos.materia) addBadge(filtrosDinamicos.materia, "Matéria");
+            if(filtrosDinamicos.escritorio) addBadge(filtrosDinamicos.escritorio, "Escrit.");
+            if(filtrosDinamicos.uf) addBadge(filtrosDinamicos.uf, "UF");
+
+            section.classList.toggle('hidden', !hasActive);
+            
+            // Badge visual no gráfico de matérias
+            document.getElementById('badgeMateria').style.display = filtrosDinamicos.materia ? 'block' : 'none';
+        }
+
+        function atualizarComparativo(atuais, anos, meses) {
+            if(anos.length === 0) return;
+            const anoMin = Math.min(...anos.map(Number));
+            const anoAnterior = (anoMin - 1).toString();
+            
+            const passados = DADOS_ORIGINAIS.filter(p => {
+                const anoP = p['Anos Distribuição'] ? String(p['Anos Distribuição']) : (p['Data de Distribuição'] ? String(p['Data de Distribuição']).split('-')[0] : null);
+                const mesP = p['Data de Distribuição'] ? String(p['Data de Distribuição']).split('-')[1] : null;
+                return anoP === anoAnterior && (meses.length === 0 || meses.includes(mesP));
+            });
+
+            const vAtual = atuais.length;
+            const vPass = passados.length;
+            const percV = vPass > 0 ? ((vAtual - vPass) / vPass) * 100 : 0;
+            document.getElementById('compare-vol-val').innerText = vAtual;
+            document.getElementById('compare-vol-perc').innerText = `${percV > 0 ? '+' : ''}${percV.toFixed(1)}%`;
+            document.getElementById('compare-vol-perc').className = `text-sm font-bold pb-1 ${percV < 0 ? 'text-green-500' : (percV > 0 ? 'text-red-500' : 'text-gray-400')}`;
+
+            const fAtual = atuais.reduce((acc, p) => acc + (Number(p['Valor da causa']) || 0), 0);
+            const fPass = passados.reduce((acc, p) => acc + (Number(p['Valor da causa']) || 0), 0);
+            const percF = fPass > 0 ? ((fAtual - fPass) / fPass) * 100 : 0;
+            document.getElementById('compare-fin-val').innerText = `R$ ${fAtual.toLocaleString('pt-BR', { notation: 'compact' })}`;
+            document.getElementById('compare-fin-perc').innerText = `${percF > 0 ? '+' : ''}${percF.toFixed(1)}%`;
+            document.getElementById('compare-fin-perc').className = `text-sm font-bold pb-1 ${percF < 0 ? 'text-green-500' : (percF > 0 ? 'text-red-500' : 'text-gray-400')}`;
+
+            const provaveis = atuais.filter(p => String(p['Risk Assessment (probabilidade de PERDA)']).includes('Provável')).length;
+            const mixRisco = vAtual > 0 ? (provaveis / vAtual) * 100 : 0;
+            document.getElementById('compare-risk-val').innerText = `${mixRisco.toFixed(1)}%`;
+            document.getElementById('compare-risk-perc').innerText = `${provaveis} processos`;
+        }
+
+        // --- GRÁFICOS (COMBO CHART E BARRAS INTERATIVO) ---
+        function renderizarGraficos(dados, anosSelecionados, mesesSelecionados) {
+            
+            // 1. Gráfico de Matérias (Interativo)
+            const matMap = dados.reduce((acc, p) => { const m = p['Matéria'] || 'Outros'; acc[m] = (acc[m] || 0) + 1; return acc; }, {});
+            const matSorted = Object.entries(matMap).sort((a,b) => b[1]-a[1]).slice(0, 8);
+            
+            if(chartMaterias) chartMaterias.destroy();
+            chartMaterias = new Chart(document.getElementById('chartMaterias').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: matSorted.map(m => m[0]),
+                    datasets: [{
+                        label: 'Processos',
+                        data: matSorted.map(m => m[1]),
+                        backgroundColor: matSorted.map(m => m[0] === filtrosDinamicos.materia ? '#1d4ed8' : '#6366f1'),
+                        borderRadius: 4
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } },
+                    onClick: (e, elements) => {
+                        if (elements.length > 0) {
+                            const idx = elements[0].index;
+                            setFiltroDinamico('materia', chartMaterias.data.labels[idx]);
+                        }
+                    }
+                }
+            });
+
+            // 2. Gráfico Evolução (Combo: Barras + Linha | Azul x Laranja)
+            const sortedYears = [...anosSelecionados].sort((a, b) => b - a);
+            const anoRecente = sortedYears[0];
+            const anoAnterior = sortedYears[1]; // Pode ser null se só 1 ano selecionado
+
+            const getMonthlyDataForYear = (anoStr) => {
+                return mesesSelecionados.map(mesNum => {
+                    const soma = dados.filter(d => {
+                        const a = d['Anos Distribuição'] ? String(d['Anos Distribuição']) : (d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[0] : null);
+                        const m = d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[1] : null;
+                        return a === anoStr && m === mesNum;
+                    }).reduce((sum, curr) => sum + (Number(curr['Valor da causa']) || 0), 0);
+                    return soma;
+                });
+            };
+
+            const labelsMeses = mesesSelecionados.map(m => MESES_CURTOS[parseInt(m) - 1]);
+            const datasetsEvolucao = [];
+
+            // Ano Recente (Azul)
+            if (anoRecente) {
+                const dataRecente = getMonthlyDataForYear(anoRecente);
+                // Barras
+                datasetsEvolucao.push({
+                    type: 'bar',
+                    label: `Valor ${anoRecente}`,
+                    data: dataRecente,
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)', // Azul
+                    borderColor: '#3b82f6',
+                    borderWidth: 1,
+                    order: 2
+                });
+                // Linha de Tendência
+                datasetsEvolucao.push({
+                    type: 'line',
+                    label: `Curva ${anoRecente}`,
+                    data: dataRecente,
+                    borderColor: '#1d4ed8', // Azul Escuro
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    order: 1
+                });
+            }
+
+            // Ano Anterior (Laranja)
+            if (anoAnterior) {
+                const dataAnterior = getMonthlyDataForYear(anoAnterior);
+                datasetsEvolucao.push({
+                    type: 'bar',
+                    label: `Valor ${anoAnterior}`,
+                    data: dataAnterior,
+                    backgroundColor: 'rgba(249, 115, 22, 0.7)', // Laranja
+                    borderColor: '#f97316',
+                    borderWidth: 1,
+                    order: 4
+                });
+                datasetsEvolucao.push({
+                    type: 'line',
+                    label: `Curva ${anoAnterior}`,
+                    data: dataAnterior,
+                    borderColor: '#c2410c', // Laranja Escuro
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    borderDash: [5, 5], // Linha tracejada para diferenciar melhor
+                    pointRadius: 3,
+                    order: 3
+                });
+            }
+
+            if(chartEvolucao) chartEvolucao.destroy();
+            chartEvolucao = new Chart(document.getElementById('chartEvolucao').getContext('2d'), {
+                data: { labels: labelsMeses, datasets: datasetsEvolucao },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10} } } 
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: function(val) { return 'R$ ' + (val/1000).toFixed(0) + 'k'; } } }
+                    }
+                }
+            });
+        }
+
+        // --- RENDERIZAÇÕES DE LISTAS E TABELAS ---
+        function renderizarRankings(dados) {
+            // Top 5 Causas
+            const top5 = [...dados].sort((a,b) => (b['Valor da causa'] || 0) - (a['Valor da causa'] || 0)).slice(0, 5);
+            document.getElementById('top-causas').innerHTML = top5.map((p, i) => `
+                <li class="flex items-center gap-3 p-2 bg-gray-50 rounded border-l-4 border-blue-500">
+                    <span class="font-bold text-blue-700 w-4">#${i+1}</span>
+                    <div class="flex-1 truncate"><p class="font-bold truncate text-[10px]">${p['Número único']}</p></div>
+                    <span class="font-bold text-slate-700 whitespace-nowrap">R$ ${Number(p['Valor da causa']).toLocaleString('pt-BR', {notation: 'compact'})}</span>
+                </li>
+            `).join('');
+
+            // Todas as UFs
+            const ufMap = dados.reduce((acc, p) => {
+                const uf = p['UF'] || 'N/I';
+                acc[uf] = (acc[uf] || 0) + (Number(p['Valor da causa']) || 0);
+                return acc;
+            }, {});
+            const allUF = Object.entries(ufMap).sort((a,b) => b[1] - a[1]);
+            const maxVal = allUF.length ? allUF[0][1] : 1;
+            document.getElementById('top-uf').innerHTML = allUF.map(([uf, val]) => `
+                <div onclick="setFiltroDinamico('uf', '${uf}')" class="flex flex-col py-1.5 px-2 mb-1 rounded clickable-item ${filtrosDinamicos.uf === uf ? 'bg-blue-100 border border-blue-300' : 'bg-gray-50 border border-gray-100'}">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="font-bold uppercase text-[10px] text-slate-700">${uf}</span>
+                        <span class="font-bold text-[10px] text-blue-700">R$ ${val.toLocaleString('pt-BR', {notation: 'compact'})}</span>
+                    </div>
+                    <div class="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                        <div class="bg-blue-500 h-full" style="width:${(val/maxVal*100)}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderizarEscritorios(dados) {
+            const escMap = dados.reduce((acc, p) => {
+                const esc = p['Escritório Responsável pela Demanda'] || 'Interno';
+                if(!acc[esc]) acc[esc] = { qtd: 0, valor: 0 };
+                acc[esc].qtd++;
+                acc[esc].valor += (Number(p['Valor da causa']) || 0);
+                return acc;
+            }, {});
+
+            document.getElementById('resumo-escritorios').innerHTML = Object.entries(escMap)
+                .sort((a, b) => b[1].valor - a[1].valor)
+                .map(([esc, info]) => `
+                <div onclick="setFiltroDinamico('escritorio', '${esc}')" class="p-2 mb-2 border rounded-lg clickable-item ${filtrosDinamicos.escritorio === esc ? 'filter-active' : 'bg-slate-50 border-slate-100'}">
+                    <div class="flex justify-between font-bold text-slate-800">
+                        <span class="truncate w-32 uppercase text-[9px]">${esc}</span>
+                        <span class="text-blue-600">${info.qtd}</span>
+                    </div>
+                    <div class="text-[9px] text-slate-500 font-bold">R$ ${info.valor.toLocaleString('pt-BR')}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderizarTabela(dados) {
+            const body = document.getElementById('processTableBody');
+            body.innerHTML = dados.map(p => `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-4 py-3"><span class="${p['Status'] === 'Encerrado' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'} px-2 py-0.5 rounded-full font-bold text-[9px] uppercase">${p['Status'] || 'Ativo'}</span></td>
+                    <td class="px-4 py-3 text-gray-500">${p['Polo'] || '-'}</td>
+                    <td class="px-4 py-3 font-mono font-bold text-blue-600">${p['Número único']}</td>
+                    <td class="px-4 py-3 text-gray-400">${p['Data de Distribuição'] || '-'}</td>
+                    <td class="px-4 py-3 font-semibold">${p['EMPRESA DO GRUPO'] || '-'}</td>
+                    <td class="px-4 py-3 text-slate-500 italic text-[10px]">${p['Escritório Responsável pela Demanda'] || '-'}</td>
+                    <td class="px-4 py-3"><b>${p['Matéria'] || '-'}</b></td>
+                    <td class="px-4 py-3 text-right font-bold text-slate-700">R$ ${Number(p['Valor da causa']).toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-3 text-center font-bold ${String(p['Risk Assessment (probabilidade de PERDA)']).includes('Provável') ? 'text-red-600' : 'text-blue-600'}">${p['Risk Assessment (probabilidade de PERDA)'] || '-'}</td>
+                    <td class="px-4 py-3 text-center font-medium text-gray-600">${p['UF'] || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function ordenarTabela(campo) {
+            const dir = (ordenacaoAtual.coluna === campo) ? -ordenacaoAtual.dir : 1;
+            ordenacaoAtual = { coluna: campo, dir };
+
+            DADOS_ORIGINAIS.sort((a, b) => {
+                let vA = a[campo] || '';
+                let vB = b[campo] || '';
+                if(!isNaN(vA) && !isNaN(vB)) return (Number(vA) - Number(vB)) * dir;
+                return String(vA).localeCompare(String(vB)) * dir;
+            });
+            atualizarDashboard();
+        }
+
+        window.onload = carregarDadosAPI;
+    </script>
+</body>
+</html>
