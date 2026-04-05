@@ -26,10 +26,6 @@
         .dropdown-content.show { display: block; }
         .dropdown-content::-webkit-scrollbar { width: 4px; }
         .dropdown-content::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        
-        /* Transição Suave da Sidebar */
-        #sidebar { transition: margin-left 0.3s ease-in-out, opacity 0.3s ease-in-out; }
-        .sidebar-hidden { margin-left: -18rem; opacity: 0; pointer-events: none; }
     </style>
 </head>
 <body class="bg-gray-50 font-sans text-gray-800">
@@ -37,15 +33,12 @@
     <div class="flex h-screen overflow-hidden">
         
         <!-- SIDEBAR -->
-        <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30">
-            <div class="mb-10 flex justify-between items-center">
-                <h1 class="text-2xl font-bold tracking-tight text-blue-400">GoGroup <span class="text-white font-light text-sm italic">BI Jurídico</span></h1>
-                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition cursor-pointer" title="Ocultar Filtros">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+        <aside class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30">
+            <div class="mb-10">
+                <h1 class="text-2xl font-bold tracking-tight text-blue-400 italic">GoGroup <span class="text-white font-light text-sm">LegalBI</span></h1>
             </div>
 
-            <nav class="flex-1 space-y-6 overflow-y-auto pr-2 custom-scroll">
+            <nav class="flex-1 space-y-6 overflow-y-visible pr-2">
                 <!-- BUSCA RÁPIDA -->
                 <div>
                     <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Busca Geral</p>
@@ -57,9 +50,9 @@
                     </div>
                 </div>
 
-                <!-- FILTROS DE STATUS, RISCO E MATÉRIA -->
+                <!-- FILTROS DE STATUS E RISCO -->
                 <div>
-                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Filtros de Processo</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Status e Risco</p>
                     <div class="space-y-3">
                         <select id="filterStatus" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
                             <option value="">Todos os Status</option>
@@ -73,11 +66,6 @@
                             <option value="Provável">Provável</option>
                             <option value="Possível">Possível</option>
                             <option value="Remota">Remota</option>
-                        </select>
-
-                        <select id="filterMateriaSidebar" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
-                            <option value="">Todas as Matérias</option>
-                            <!-- Gerado via JS -->
                         </select>
                     </div>
                 </div>
@@ -128,24 +116,17 @@
         <main class="flex-1 overflow-y-auto p-8 custom-scroll relative z-10" onclick="closeDropdowns(event)">
             
             <header class="flex justify-between items-center mb-8">
-                <div class="flex items-center gap-4">
-                    <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-white border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Mostrar Filtros">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900">Jurídico GoGroup</h2>
-                        <p class="text-gray-500 text-sm italic">Dados Integrados e Conectados</p>
-                    </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Dashboard Executivo</h2>
+                    <p class="text-gray-500 text-sm italic">Dados Integrados e Conectados</p>
                 </div>
-                <div class="flex gap-4 items-center">
+                <div class="flex gap-3">
                     <button onclick="carregarDadosAPI()" class="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
                         <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
                     </button>
-                    <button class="bg-orange-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-orange-700 shadow-md flex items-center transition">
-                        <i class="fas fa-file-powerpoint mr-2"></i> Exportar PPT
+                    <button class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 shadow-md flex items-center transition">
+                        <i class="fas fa-file-pdf mr-2"></i> Exportar BI
                     </button>
-                    <!-- Logo GoGroup -->
-                    <img src="https://s3.amazonaws.com/gupy5/production/companies/41819/emails/1676643247738/e43ea6f0-ae8f-11ed-9f5b-6f83040c5f56.png" alt="GoGroup Logo" class="h-10 object-contain drop-shadow-sm" onerror="this.src='https://via.placeholder.com/120x40?text=GoGroup'">
                 </div>
             </header>
 
@@ -209,16 +190,16 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <!-- GRÁFICO 1: EVOLUÇÃO (BARRAS + LINHA) -->
                 <div class="bg-white p-6 rounded-xl card-shadow relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help" title="Exibe a evolução financeira de múltiplos anos simultaneamente. O ano mais recente é azul, o anterior laranja. As linhas representam a curva de tendência de crescimento."></i>
-                    <h4 class="font-bold text-slate-700 mb-4"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Comparativo de Anos)</h4>
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help" title="Compara o valor financeiro do ano mais recente (Azul) com o ano anterior (Laranja). As linhas representam a curva de tendência."></i>
+                    <h4 class="font-bold text-slate-700 mb-4"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Ano Atual vs Anterior)</h4>
                     <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                 </div>
                 
                 <!-- GRÁFICO 2: MATÉRIAS (INTERATIVO) -->
                 <div class="bg-white p-6 rounded-xl card-shadow relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-indigo-500 cursor-help" title="Mostra a quantidade de processos por matéria. CLIQUE em uma barra para filtrar todo o painel por essa matéria."></i>
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-indigo-500 cursor-help" title="Mostra o volume por matéria. CLIQUE em uma barra para filtrar todo o dashboard por essa matéria."></i>
                     <div class="flex justify-between items-start mb-4">
-                        <h4 class="font-bold text-slate-700"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Quantidade de Processos por Matéria</h4>
+                        <h4 class="font-bold text-slate-700"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Volume por Matéria</h4>
                         <span id="badgeMateria" class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold hidden uppercase mr-6">Filtro Ativo</span>
                     </div>
                     <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
@@ -247,27 +228,6 @@
                     <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 cursor-help" title="Resumo do volume e valor financeiro gerenciado por cada escritório parceiro."></i>
                     <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Performance por Escritório</h4>
                     <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto pr-2 text-xs custom-scroll"></div>
-                </div>
-            </div>
-
-            <!-- RESUMO POR MATÉRIA -->
-            <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
-                <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
-                    <h4 class="font-bold text-slate-800">Resumo de Processos por Matéria</h4>
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-gray-400 cursor-help" title="Resumo quantitativo e financeiro agrupado pelas matérias processuais dos filtros atuais."></i>
-                </div>
-                <div class="table-container overflow-x-auto custom-scroll">
-                    <table class="w-full text-left border-collapse whitespace-nowrap" id="summaryMateriaTable">
-                        <thead class="text-white text-[10px] uppercase tracking-tighter bg-slate-800">
-                            <tr>
-                                <th class="px-4 py-3">Matéria</th>
-                                <th class="px-4 py-3 text-center">Quantidade de Processos</th>
-                                <th class="px-4 py-3 text-right">Valor Total (R$)</th>
-                                <th class="px-4 py-3 text-center">Volume (%)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="summaryMateriaBody" class="text-[11px] divide-y divide-gray-200"></tbody>
-                    </table>
                 </div>
             </div>
 
@@ -318,19 +278,6 @@
             materia: null
         };
 
-        // --- TOGGLE DA SIDEBAR ---
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const isHidden = sidebar.classList.contains('sidebar-hidden');
-            if (isHidden) {
-                sidebar.classList.remove('sidebar-hidden');
-                document.getElementById('sidebarToggleBtn').classList.add('hidden');
-            } else {
-                sidebar.classList.add('sidebar-hidden');
-                document.getElementById('sidebarToggleBtn').classList.remove('hidden');
-            }
-        }
-
         // --- LÓGICA DE DROPDOWNS ---
         function toggleDropdown(id) {
             const dropdown = document.getElementById(id);
@@ -366,6 +313,7 @@
                 DADOS_ORIGINAIS = data.processos || [];
             } catch (e) {
                 console.warn("API Offline, usando dados de demonstração.");
+                // Mockup estendido para suportar múltiplos anos e matérias
                 DADOS_ORIGINAIS = [
                     {'Status': 'Ativo', 'Polo': 'Passivo', 'Número único': '001-2024.1', 'Data de Distribuição': '2024-01-15', 'EMPRESA DO GRUPO': 'GoLog S.A', 'Escritório Responsável pela Demanda': 'Almeida Adv.', 'Matéria': 'Trabalhista', 'Valor da causa': 150000, 'Risk Assessment (probabilidade de PERDA)': 'Provável', 'UF': 'SP', 'Anos Distribuição': '2024'},
                     {'Status': 'Ativo', 'Polo': 'Ativo', 'Número único': '002-2024.2', 'Data de Distribuição': '2024-02-10', 'EMPRESA DO GRUPO': 'GoTech Ltda', 'Escritório Responsável pela Demanda': 'Silva & Silva', 'Matéria': 'Tributário', 'Valor da causa': 320000, 'Risk Assessment (probabilidade de PERDA)': 'Possível', 'UF': 'RJ', 'Anos Distribuição': '2024'},
@@ -380,12 +328,7 @@
         }
 
         function initFiltrosDropwdown() {
-            // Matérias Sidebar
-            const materiasPresentes = [...new Set(DADOS_ORIGINAIS.map(p => p['Matéria']))].filter(m => m).sort();
-            const matSelect = document.getElementById('filterMateriaSidebar');
-            matSelect.innerHTML = '<option value="">Todas as Matérias</option>' + materiasPresentes.map(m => `<option value="${m}">${m}</option>`).join('');
-
-            // Anos Dinâmicos
+            // Anos Dinâmicos (Puxa todos os anos da base)
             const anosPresentes = [...new Set(DADOS_ORIGINAIS.map(p => {
                 if (p['Anos Distribuição']) return String(p['Anos Distribuição']);
                 if (p['Data de Distribuição']) return String(p['Data de Distribuição']).split('-')[0];
@@ -400,7 +343,7 @@
                 </label>
             `;
             anosPresentes.forEach((ano, index) => {
-                const isChecked = index < 2 ? 'checked' : ''; 
+                const isChecked = index < 2 ? 'checked' : ''; // Deixa os 2 últimos anos marcados por padrão
                 yearContainer.innerHTML += `
                     <label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-gray-300 text-xs">
                         <input type="checkbox" value="${ano}" onchange="checkSelectAllState('filter-year', 'selectAllYears')" class="mr-3 filter-year accent-blue-500" ${isChecked}>
@@ -444,7 +387,6 @@
             filtrosDinamicos = { escritorio: null, uf: null, materia: null };
             document.getElementById('filterStatus').value = "";
             document.getElementById('filterRisco').value = "";
-            document.getElementById('filterMateriaSidebar').value = "";
             document.querySelectorAll('.filter-year').forEach(el => el.checked = true);
             document.querySelectorAll('.filter-month').forEach(el => el.checked = true);
             document.getElementById('sidebarSearch').value = "";
@@ -460,11 +402,11 @@
             const busca = document.getElementById('sidebarSearch').value.toLowerCase();
             const status = document.getElementById('filterStatus').value;
             const risco = document.getElementById('filterRisco').value;
-            const materiaSidebar = document.getElementById('filterMateriaSidebar').value;
             
             const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(el => el.value);
             const mesesSel = Array.from(document.querySelectorAll('.filter-month:checked')).map(el => el.value);
 
+            // Atualizar Labels dos Dropdowns
             document.getElementById('yearLabel').innerText = anosSel.length ? `${anosSel.length} Anos` : "Selecionar Anos";
             document.getElementById('monthLabel').innerText = mesesSel.length ? `${mesesSel.length} Meses` : "Selecionar Meses";
 
@@ -482,14 +424,13 @@
 
                 const matchEscritorio = !filtrosDinamicos.escritorio || p['Escritório Responsável pela Demanda'] === filtrosDinamicos.escritorio;
                 const matchUF = !filtrosDinamicos.uf || p['UF'] === filtrosDinamicos.uf;
-                const matchMateriaInterativa = !filtrosDinamicos.materia || p['Matéria'] === filtrosDinamicos.materia;
-                const matchMateriaSide = !materiaSidebar || p['Matéria'] === materiaSidebar;
+                const matchMateria = !filtrosDinamicos.materia || p['Matéria'] === filtrosDinamicos.materia;
 
-                return matchBusca && matchStatus && matchRisco && matchData && matchEscritorio && matchUF && matchMateriaInterativa && matchMateriaSide;
+                return matchBusca && matchStatus && matchRisco && matchData && matchEscritorio && matchUF && matchMateria;
             });
 
             atualizarComparativo(filtrados, anosSel, mesesSel);
-            atualizarBadgesFiltros(status, risco, anosSel, mesesSel, materiaSidebar);
+            atualizarBadgesFiltros(status, risco, anosSel, mesesSel);
 
             // KPIs
             const total = filtrados.reduce((acc, p) => acc + (Number(p['Valor da causa']) || 0), 0);
@@ -504,42 +445,12 @@
 
             // Componentes
             renderizarTabela(filtrados);
-            renderizarResumoMateria(filtrados);
             renderizarRankings(filtrados);
             renderizarEscritorios(filtrados);
             renderizarGraficos(filtrados, anosSel, mesesSel);
         }
 
-        function renderizarResumoMateria(dados) {
-            const matMap = dados.reduce((acc, p) => {
-                const m = p['Matéria'] || 'Outros';
-                if(!acc[m]) acc[m] = { qtd: 0, valor: 0 };
-                acc[m].qtd++;
-                acc[m].valor += (Number(p['Valor da causa']) || 0);
-                return acc;
-            }, {});
-
-            const totalQtd = dados.length || 1; // avoid div by zero
-            const sortedMat = Object.entries(matMap).sort((a,b) => b[1].valor - a[1].valor);
-
-            document.getElementById('summaryMateriaBody').innerHTML = sortedMat.map(([mat, info]) => `
-                <tr class="hover:bg-blue-50 transition-colors">
-                    <td class="px-4 py-3 font-bold text-slate-700">${mat}</td>
-                    <td class="px-4 py-3 text-center font-medium">${info.qtd}</td>
-                    <td class="px-4 py-3 text-right font-bold text-blue-600">R$ ${info.valor.toLocaleString('pt-BR')}</td>
-                    <td class="px-4 py-3 text-center">
-                        <div class="flex items-center justify-center gap-2">
-                            <span class="w-8 text-[10px] text-gray-500">${((info.qtd/totalQtd)*100).toFixed(1)}%</span>
-                            <div class="w-20 bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-indigo-500 h-full" style="width:${((info.qtd/totalQtd)*100)}%"></div>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
-
-        function atualizarBadgesFiltros(status, risco, anos, meses, materiaSidebar) {
+        function atualizarBadgesFiltros(status, risco, anos, meses) {
             const section = document.getElementById('activeFiltersSection');
             const badges = document.getElementById('filterBadges');
             badges.innerHTML = '';
@@ -555,8 +466,7 @@
 
             if(status) addBadge(status, "Status");
             if(risco) addBadge(risco, "Risco");
-            if(materiaSidebar) addBadge(materiaSidebar, "Matéria(S)");
-            if(filtrosDinamicos.materia) addBadge(filtrosDinamicos.materia, "Matéria(G)");
+            if(filtrosDinamicos.materia) addBadge(filtrosDinamicos.materia, "Matéria");
             if(filtrosDinamicos.escritorio) addBadge(filtrosDinamicos.escritorio, "Escrit.");
             if(filtrosDinamicos.uf) addBadge(filtrosDinamicos.uf, "UF");
 
@@ -600,7 +510,7 @@
         // --- GRÁFICOS (COMBO CHART E BARRAS INTERATIVO) ---
         function renderizarGraficos(dados, anosSelecionados, mesesSelecionados) {
             
-            // 1. Gráfico de Matérias (Quantidade de Processos)
+            // 1. Gráfico de Matérias (Interativo)
             const matMap = dados.reduce((acc, p) => { const m = p['Matéria'] || 'Outros'; acc[m] = (acc[m] || 0) + 1; return acc; }, {});
             const matSorted = Object.entries(matMap).sort((a,b) => b[1]-a[1]).slice(0, 8);
             
@@ -610,7 +520,7 @@
                 data: {
                     labels: matSorted.map(m => m[0]),
                     datasets: [{
-                        label: 'Qtd de Processos',
+                        label: 'Processos',
                         data: matSorted.map(m => m[1]),
                         backgroundColor: matSorted.map(m => m[0] === filtrosDinamicos.materia ? '#1d4ed8' : '#6366f1'),
                         borderRadius: 4
@@ -629,85 +539,77 @@
                 }
             });
 
-            // 2. Gráfico Evolução (Combo: Barras + Linha | Múltiplos Anos + Quantidade)
-            const sortedYears = [...anosSelecionados].sort((a, b) => b - a); // Mais recente primeiro
-            
+            // 2. Gráfico Evolução (Combo: Barras + Linha | Azul x Laranja)
+            const sortedYears = [...anosSelecionados].sort((a, b) => b - a);
+            const anoRecente = sortedYears[0];
+            const anoAnterior = sortedYears[1]; // Pode ser null se só 1 ano selecionado
+
             const getMonthlyDataForYear = (anoStr) => {
                 return mesesSelecionados.map(mesNum => {
-                    return dados.filter(d => {
+                    const soma = dados.filter(d => {
                         const a = d['Anos Distribuição'] ? String(d['Anos Distribuição']) : (d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[0] : null);
                         const m = d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[1] : null;
                         return a === anoStr && m === mesNum;
                     }).reduce((sum, curr) => sum + (Number(curr['Valor da causa']) || 0), 0);
-                });
-            };
-
-            const getMonthlyCountForYear = (anoStr) => {
-                return mesesSelecionados.map(mesNum => {
-                    return dados.filter(d => {
-                        const a = d['Anos Distribuição'] ? String(d['Anos Distribuição']) : (d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[0] : null);
-                        const m = d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[1] : null;
-                        return a === anoStr && m === mesNum;
-                    }).length;
+                    return soma;
                 });
             };
 
             const labelsMeses = mesesSelecionados.map(m => MESES_CURTOS[parseInt(m) - 1]);
             const datasetsEvolucao = [];
 
-            // Paleta de Cores Dinâmica (Azul p/ recente, Laranja p/ anterior, outras cores se mais anos)
-            const colors = [
-                { bg: 'rgba(59, 130, 246, 0.7)', border: '#3b82f6', line: '#1d4ed8' }, // Azul
-                { bg: 'rgba(249, 115, 22, 0.7)', border: '#f97316', line: '#c2410c' }, // Laranja
-                { bg: 'rgba(16, 185, 129, 0.7)', border: '#10b981', line: '#047857' }, // Verde
-                { bg: 'rgba(139, 92, 246, 0.7)', border: '#8b5cf6', line: '#6d28d9' }, // Roxo
-                { bg: 'rgba(239, 68, 68, 0.7)',  border: '#ef4444', line: '#b91c1c' }  // Vermelho
-            ];
-
-            sortedYears.forEach((ano, index) => {
-                const dataAno = getMonthlyDataForYear(ano);
-                const countAno = getMonthlyCountForYear(ano);
-                const colorSet = colors[index % colors.length];
-                
+            // Ano Recente (Azul)
+            if (anoRecente) {
+                const dataRecente = getMonthlyDataForYear(anoRecente);
+                // Barras
                 datasetsEvolucao.push({
                     type: 'bar',
-                    label: `Valor ${ano}`,
-                    data: dataAno,
-                    backgroundColor: colorSet.bg,
-                    borderColor: colorSet.border,
+                    label: `Valor ${anoRecente}`,
+                    data: dataRecente,
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)', // Azul
+                    borderColor: '#3b82f6',
                     borderWidth: 1,
-                    yAxisID: 'y',
-                    order: 3
+                    order: 2
                 });
-                
+                // Linha de Tendência
                 datasetsEvolucao.push({
                     type: 'line',
-                    label: `Curva Valor ${ano}`,
-                    data: dataAno,
-                    borderColor: colorSet.line,
+                    label: `Curva ${anoRecente}`,
+                    data: dataRecente,
+                    borderColor: '#1d4ed8', // Azul Escuro
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    borderDash: index > 0 ? [5, 5] : [],
                     pointRadius: 3,
-                    yAxisID: 'y',
-                    order: 2
-                });
-                
-                datasetsEvolucao.push({
-                    type: 'line',
-                    label: `Qtd Proc. ${ano}`,
-                    data: countAno,
-                    borderColor: colorSet.border,
-                    backgroundColor: colorSet.bg,
-                    borderWidth: 2,
-                    borderDash: [2, 2],
-                    pointStyle: 'rectRot',
-                    pointRadius: 5,
-                    yAxisID: 'y1',
                     order: 1
                 });
-            });
+            }
+
+            // Ano Anterior (Laranja)
+            if (anoAnterior) {
+                const dataAnterior = getMonthlyDataForYear(anoAnterior);
+                datasetsEvolucao.push({
+                    type: 'bar',
+                    label: `Valor ${anoAnterior}`,
+                    data: dataAnterior,
+                    backgroundColor: 'rgba(249, 115, 22, 0.7)', // Laranja
+                    borderColor: '#f97316',
+                    borderWidth: 1,
+                    order: 4
+                });
+                datasetsEvolucao.push({
+                    type: 'line',
+                    label: `Curva ${anoAnterior}`,
+                    data: dataAnterior,
+                    borderColor: '#c2410c', // Laranja Escuro
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    borderDash: [5, 5], // Linha tracejada para diferenciar melhor
+                    pointRadius: 3,
+                    order: 3
+                });
+            }
 
             if(chartEvolucao) chartEvolucao.destroy();
             chartEvolucao = new Chart(document.getElementById('chartEvolucao').getContext('2d'), {
@@ -716,20 +618,10 @@
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
-                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10} } },
-                        tooltip: { mode: 'index', intersect: false }
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10} } } 
                     },
                     scales: {
-                        y: { 
-                            type: 'linear', display: true, position: 'left', beginAtZero: true, 
-                            title: { display: true, text: 'Valor (R$)', font: { size: 10 } },
-                            ticks: { callback: function(val) { return 'R$ ' + (val/1000).toFixed(0) + 'k'; } } 
-                        },
-                        y1: {
-                            type: 'linear', display: true, position: 'right', beginAtZero: true,
-                            title: { display: true, text: 'Quantidade Processos', font: { size: 10 } },
-                            grid: { drawOnChartArea: false }
-                        }
+                        y: { beginAtZero: true, ticks: { callback: function(val) { return 'R$ ' + (val/1000).toFixed(0) + 'k'; } } }
                     }
                 }
             });
@@ -737,6 +629,7 @@
 
         // --- RENDERIZAÇÕES DE LISTAS E TABELAS ---
         function renderizarRankings(dados) {
+            // Top 5 Causas
             const top5 = [...dados].sort((a,b) => (b['Valor da causa'] || 0) - (a['Valor da causa'] || 0)).slice(0, 5);
             document.getElementById('top-causas').innerHTML = top5.map((p, i) => `
                 <li class="flex items-center gap-3 p-2 bg-gray-50 rounded border-l-4 border-blue-500">
@@ -746,6 +639,7 @@
                 </li>
             `).join('');
 
+            // Todas as UFs
             const ufMap = dados.reduce((acc, p) => {
                 const uf = p['UF'] || 'N/I';
                 acc[uf] = (acc[uf] || 0) + (Number(p['Valor da causa']) || 0);
