@@ -38,8 +38,11 @@
         
         <!-- SIDEBAR -->
         <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30">
-            <div class="mb-10">
-                <h1 class="text-2xl font-bold tracking-tight text-blue-400 italic">GoGroup <span class="text-white font-light text-sm">LegalBI</span></h1>
+            <div class="mb-10 flex justify-between items-center">
+                <h1 class="text-2xl font-bold tracking-tight text-blue-400">GoGroup <span class="text-white font-light text-sm italic">BI Jurídico</span></h1>
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition cursor-pointer" title="Ocultar Filtros">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
 
             <nav class="flex-1 space-y-6 overflow-y-auto pr-2 custom-scroll">
@@ -126,8 +129,8 @@
             
             <header class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <button onclick="toggleSidebar()" class="bg-white border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Mostrar/Ocultar Filtros">
-                        <i class="fas fa-filter"></i>
+                    <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-white border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Mostrar Filtros">
+                        <i class="fas fa-bars"></i>
                     </button>
                     <div>
                         <h2 class="text-2xl font-bold text-slate-900">Jurídico GoGroup</h2>
@@ -137,6 +140,9 @@
                 <div class="flex gap-4 items-center">
                     <button onclick="carregarDadosAPI()" class="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
                         <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
+                    </button>
+                    <button class="bg-orange-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-orange-700 shadow-md flex items-center transition">
+                        <i class="fas fa-file-powerpoint mr-2"></i> Exportar PPT
                     </button>
                     <!-- Logo GoGroup -->
                     <img src="https://s3.amazonaws.com/gupy5/production/companies/41819/emails/1676643247738/e43ea6f0-ae8f-11ed-9f5b-6f83040c5f56.png" alt="GoGroup Logo" class="h-10 object-contain drop-shadow-sm" onerror="this.src='https://via.placeholder.com/120x40?text=GoGroup'">
@@ -244,6 +250,27 @@
                 </div>
             </div>
 
+            <!-- RESUMO POR MATÉRIA -->
+            <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
+                <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
+                    <h4 class="font-bold text-slate-800">Resumo de Processos por Matéria</h4>
+                    <i class="fas fa-info-circle absolute top-5 right-5 text-gray-400 cursor-help" title="Resumo quantitativo e financeiro agrupado pelas matérias processuais dos filtros atuais."></i>
+                </div>
+                <div class="table-container overflow-x-auto custom-scroll">
+                    <table class="w-full text-left border-collapse whitespace-nowrap" id="summaryMateriaTable">
+                        <thead class="text-white text-[10px] uppercase tracking-tighter bg-slate-800">
+                            <tr>
+                                <th class="px-4 py-3">Matéria</th>
+                                <th class="px-4 py-3 text-center">Quantidade de Processos</th>
+                                <th class="px-4 py-3 text-right">Valor Total (R$)</th>
+                                <th class="px-4 py-3 text-center">Volume (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryMateriaBody" class="text-[11px] divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- TABELA INTEGRAL -->
             <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
                 <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
@@ -293,7 +320,15 @@
 
         // --- TOGGLE DA SIDEBAR ---
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('sidebar-hidden');
+            const sidebar = document.getElementById('sidebar');
+            const isHidden = sidebar.classList.contains('sidebar-hidden');
+            if (isHidden) {
+                sidebar.classList.remove('sidebar-hidden');
+                document.getElementById('sidebarToggleBtn').classList.add('hidden');
+            } else {
+                sidebar.classList.add('sidebar-hidden');
+                document.getElementById('sidebarToggleBtn').classList.remove('hidden');
+            }
         }
 
         // --- LÓGICA DE DROPDOWNS ---
@@ -469,9 +504,39 @@
 
             // Componentes
             renderizarTabela(filtrados);
+            renderizarResumoMateria(filtrados);
             renderizarRankings(filtrados);
             renderizarEscritorios(filtrados);
             renderizarGraficos(filtrados, anosSel, mesesSel);
+        }
+
+        function renderizarResumoMateria(dados) {
+            const matMap = dados.reduce((acc, p) => {
+                const m = p['Matéria'] || 'Outros';
+                if(!acc[m]) acc[m] = { qtd: 0, valor: 0 };
+                acc[m].qtd++;
+                acc[m].valor += (Number(p['Valor da causa']) || 0);
+                return acc;
+            }, {});
+
+            const totalQtd = dados.length || 1; // avoid div by zero
+            const sortedMat = Object.entries(matMap).sort((a,b) => b[1].valor - a[1].valor);
+
+            document.getElementById('summaryMateriaBody').innerHTML = sortedMat.map(([mat, info]) => `
+                <tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-4 py-3 font-bold text-slate-700">${mat}</td>
+                    <td class="px-4 py-3 text-center font-medium">${info.qtd}</td>
+                    <td class="px-4 py-3 text-right font-bold text-blue-600">R$ ${info.valor.toLocaleString('pt-BR')}</td>
+                    <td class="px-4 py-3 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="w-8 text-[10px] text-gray-500">${((info.qtd/totalQtd)*100).toFixed(1)}%</span>
+                            <div class="w-20 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full" style="width:${((info.qtd/totalQtd)*100)}%"></div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
         }
 
         function atualizarBadgesFiltros(status, risco, anos, meses, materiaSidebar) {
@@ -564,7 +629,7 @@
                 }
             });
 
-            // 2. Gráfico Evolução (Combo: Barras + Linha | Múltiplos Anos)
+            // 2. Gráfico Evolução (Combo: Barras + Linha | Múltiplos Anos + Quantidade)
             const sortedYears = [...anosSelecionados].sort((a, b) => b - a); // Mais recente primeiro
             
             const getMonthlyDataForYear = (anoStr) => {
@@ -574,6 +639,16 @@
                         const m = d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[1] : null;
                         return a === anoStr && m === mesNum;
                     }).reduce((sum, curr) => sum + (Number(curr['Valor da causa']) || 0), 0);
+                });
+            };
+
+            const getMonthlyCountForYear = (anoStr) => {
+                return mesesSelecionados.map(mesNum => {
+                    return dados.filter(d => {
+                        const a = d['Anos Distribuição'] ? String(d['Anos Distribuição']) : (d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[0] : null);
+                        const m = d['Data de Distribuição'] ? String(d['Data de Distribuição']).split('-')[1] : null;
+                        return a === anoStr && m === mesNum;
+                    }).length;
                 });
             };
 
@@ -591,6 +666,7 @@
 
             sortedYears.forEach((ano, index) => {
                 const dataAno = getMonthlyDataForYear(ano);
+                const countAno = getMonthlyCountForYear(ano);
                 const colorSet = colors[index % colors.length];
                 
                 datasetsEvolucao.push({
@@ -600,19 +676,35 @@
                     backgroundColor: colorSet.bg,
                     borderColor: colorSet.border,
                     borderWidth: 1,
-                    order: 2
+                    yAxisID: 'y',
+                    order: 3
                 });
                 
                 datasetsEvolucao.push({
                     type: 'line',
-                    label: `Curva ${ano}`,
+                    label: `Curva Valor ${ano}`,
                     data: dataAno,
                     borderColor: colorSet.line,
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    borderDash: index > 0 ? [5, 5] : [], // Linha tracejada para anos anteriores
+                    borderDash: index > 0 ? [5, 5] : [],
                     pointRadius: 3,
+                    yAxisID: 'y',
+                    order: 2
+                });
+                
+                datasetsEvolucao.push({
+                    type: 'line',
+                    label: `Qtd Proc. ${ano}`,
+                    data: countAno,
+                    borderColor: colorSet.border,
+                    backgroundColor: colorSet.bg,
+                    borderWidth: 2,
+                    borderDash: [2, 2],
+                    pointStyle: 'rectRot',
+                    pointRadius: 5,
+                    yAxisID: 'y1',
                     order: 1
                 });
             });
@@ -624,10 +716,20 @@
                     responsive: true, 
                     maintainAspectRatio: false, 
                     plugins: { 
-                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10} } } 
+                        legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 10} } },
+                        tooltip: { mode: 'index', intersect: false }
                     },
                     scales: {
-                        y: { beginAtZero: true, ticks: { callback: function(val) { return 'R$ ' + (val/1000).toFixed(0) + 'k'; } } }
+                        y: { 
+                            type: 'linear', display: true, position: 'left', beginAtZero: true, 
+                            title: { display: true, text: 'Valor (R$)', font: { size: 10 } },
+                            ticks: { callback: function(val) { return 'R$ ' + (val/1000).toFixed(0) + 'k'; } } 
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right', beginAtZero: true,
+                            title: { display: true, text: 'Quantidade Processos', font: { size: 10 } },
+                            grid: { drawOnChartArea: false }
+                        }
                     }
                 }
             });
