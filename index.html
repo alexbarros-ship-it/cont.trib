@@ -141,18 +141,22 @@
             <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-blue-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help transition" title="Soma total do valor da causa de todos os processos atualmente filtrados."></i>
                     <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Soma Total da Causa</p>
                     <h3 id="kpi-total" class="text-2xl font-bold text-slate-800 truncate" title="R$ 0,00">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-green-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-green-500 cursor-help transition" title="Soma total do valor atualizado dos processos filtrados."></i>
                     <p class="text-[10px] text-green-600 font-bold uppercase mb-1 tracking-wider">Soma Valor Atualizado</p>
                     <h3 id="kpi-atualizado" class="text-2xl font-bold text-slate-800 truncate" title="R$ 0,00">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-red-500 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-red-500 cursor-help transition" title="Soma do valor da causa apenas para os processos com avaliação de risco 'Provável'."></i>
                     <p class="text-[10px] text-red-600 font-bold uppercase mb-1 tracking-wider">Cenário Provável (Causa)</p>
                     <h3 id="kpi-provavel" class="text-2xl font-bold text-slate-800 truncate">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-slate-400 relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-slate-500 cursor-help transition" title="Quantidade total de processos ativos dentro dos filtros selecionados."></i>
                     <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Volume Processual</p>
                     <h3 id="kpi-count" class="text-2xl font-bold text-slate-800">0</h3>
                 </div>
@@ -163,9 +167,10 @@
                 
                 <!-- QUADRO COMPARATIVO (Metade da página) -->
                 <div class="bg-white p-6 rounded-xl card-shadow border border-blue-100 bg-gradient-to-r from-white to-blue-50 relative flex flex-col justify-center">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-blue-300 hover:text-blue-500 cursor-help transition" title="Analisa os anos selecionados contra o ano imediatamente anterior, mostrando as variações de percentagem."></i>
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-bold text-slate-700"><i class="fas fa-balance-scale mr-2 text-blue-600"></i> Comparativo de Períodos</h4>
-                        <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase font-bold mr-2">Base: Filtros Atuais</span>
+                        <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase font-bold mr-6">Base: Filtros Atuais</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="flex flex-col border-r border-blue-100 pr-2">
@@ -185,6 +190,7 @@
 
                 <!-- GRÁFICO DE PIZZA (Matérias: Quantidade e Valor) -->
                 <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-pink-500 cursor-help transition" title="Representação visual do volume de processos distribuído por cada matéria jurídica."></i>
                     <div class="flex justify-between items-start mb-4">
                         <h4 class="font-bold text-slate-700"><i class="fas fa-chart-pie mr-2 text-pink-500"></i> Proporção por Matéria</h4>
                     </div>
@@ -196,15 +202,17 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <!-- EVOLUÇÃO TEMPORAL (2/3 da página) -->
                 <div class="bg-white p-6 rounded-xl card-shadow relative lg:col-span-2">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help transition" title="Mostra a evolução mensal dos valores e quantidades de processos ao longo dos anos selecionados."></i>
                     <h4 class="font-bold text-slate-700 mb-4"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Comparativo de Anos)</h4>
                     <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                 </div>
                 
                 <!-- GRÁFICO BARRAS MATÉRIA (1/3 da página) -->
                 <div class="bg-white p-6 rounded-xl card-shadow relative lg:col-span-1">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-indigo-500 cursor-help transition" title="Quantidade absoluta de processos nas matérias mais recorrentes. Clique na barra para aplicar como filtro."></i>
                     <div class="flex justify-between items-start mb-4">
                         <h4 class="font-bold text-slate-700"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Top Matérias</h4>
-                        <span id="badgeMateria" class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold hidden uppercase mr-2">Filtro Ativo</span>
+                        <span id="badgeMateria" class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold hidden uppercase mr-6">Filtro Ativo</span>
                     </div>
                     <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
                 </div>
@@ -213,14 +221,17 @@
             <!-- RANKINGS E LISTAS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help transition" title="Lista os 5 processos com o maior 'Valor da causa' do painel."></i>
                     <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Top 5 Causas (Valor)</h4>
                     <ul id="top-causas" class="space-y-3 text-xs"></ul>
                 </div>
                 <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help transition" title="Demonstra o valor total da causa alocado por Estado (UF). Pode clicar num estado para aplicar o filtro."></i>
                     <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Exposição por UF (Completo)</h4>
                     <div id="top-uf" class="flex-1 space-y-2 text-xs text-gray-600 overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
                 <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <i class="fas fa-info-circle absolute top-4 right-4 text-gray-300 hover:text-blue-500 cursor-help transition" title="Exibe a volumetria e o impacto financeiro das causas geridas por cada escritório. Clique para filtrar."></i>
                     <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Performance por Escritório</h4>
                     <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto pr-2 text-xs custom-scroll"></div>
                 </div>
@@ -230,6 +241,7 @@
             <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
                 <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
                     <h4 class="font-bold text-slate-800">Resumo de Processos por Matéria</h4>
+                    <i class="fas fa-info-circle text-gray-400 hover:text-gray-600 cursor-help transition text-lg" title="Visão em tabela detalhando as métricas de volume e financeira segmentadas pelas matérias presentes nos dados."></i>
                 </div>
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse whitespace-nowrap">
@@ -251,7 +263,10 @@
             <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
                 <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
                     <h4 class="font-bold text-slate-800">Base Consolidada (24 Colunas) <span id="table-count" class="text-blue-600 ml-2"></span></h4>
-                    <span class="text-[10px] text-gray-400 italic mr-8">Clique no título da coluna para ordenar</span>
+                    <div class="flex items-center gap-4">
+                        <span class="text-[10px] text-gray-400 italic">Clique no título da coluna para ordenar</span>
+                        <i class="fas fa-info-circle text-gray-400 hover:text-gray-600 cursor-help transition text-lg" title="A sua base de dados completa em bruto de acordo com os filtros selecionados. Clique num cabeçalho para ordenar a tabela de forma ascendente ou descendente."></i>
+                    </div>
                 </div>
                 
                 <div class="table-container custom-scroll">
