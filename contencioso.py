@@ -1,6 +1,6 @@
 import os
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
@@ -64,28 +64,29 @@ def load_data():
             target_sheet = sheet_titles[0]
             print(f"➡️ Redirecionando para a aba: '{target_sheet}'")
         
-        # 3. Baixar os dados
-        result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=target_sheet).execute()
+        # 3. Baixar os dados usando range mais forçado para evitar que falhe em formatações vazias
+        target_range = f"'{target_sheet}'!A1:ZZ10000"
+        result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=target_range).execute()
         values = result.get('values', [])
         
+        print(f"📊 Total de linhas brutas extraídas: {len(values)}")
+        
         if not values:
-            print(f"⚠️ A aba '{target_sheet}' está completamente vazia.")
+            print(f"⚠️ A aba '{target_sheet}' está completamente vazia ou sem dados acessíveis.")
             df_global = pd.DataFrame()
             return
 
-        # 4. Localizar inteligentemente o cabeçalho (ignora títulos soltos ou logos na linha 1)
+        # 4. Localizar inteligentemente o cabeçalho (tolerância ajustada para 2 colunas preenchidas)
         header_idx = 0
         for i, row in enumerate(values):
-            # Procura a primeira linha que tenha pelo menos 4 colunas preenchidas
             filled_cells = len([c for c in row if str(c).strip()])
-            if filled_cells >= 4:
+            if filled_cells >= 2:
                 header_idx = i
                 break
                 
         print(f"📌 Cabeçalho detectado na linha {header_idx + 1} do Excel.")
         
         raw_headers = values[header_idx]
-        # Garante nomes únicos para evitar falhas de duplicidade no Pandas
         headers = [str(h).strip() if h else f"Coluna_Sem_Nome_{i}" for i, h in enumerate(raw_headers)]
         
         data = values[header_idx + 1:]
@@ -99,7 +100,7 @@ def load_data():
         data_padded = [row + [''] * (len(headers) - len(row)) for row in data]
         df = pd.DataFrame(data_padded, columns=headers)
         
-        # Deleta linhas inteiramente vazias (frequente no Excel/Sheets)
+        # Deleta linhas inteiramente vazias
         df = df.replace('', np.nan).dropna(how='all').fillna('')
         
         if df.empty:
@@ -124,6 +125,11 @@ def load_data():
 @app.on_event("startup")
 def startup_event():
     load_data()
+
+# Silencia o aviso 404 do ícone
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(content=b"", media_type="image/x-icon")
 
 @app.get("/")
 def health():
