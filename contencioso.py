@@ -57,12 +57,14 @@ def load_data():
         sheets = sheet_metadata.get('sheets', '')
         sheet_titles = [s['properties']['title'] for s in sheets]
         
-        # 2. Tentar encontrar a aba específica, senão pega a primeira aba disponível
+        # 2. LER APENAS A ABA EXATA
         target_sheet = 'Planilha Completa - Grupo'
         if target_sheet not in sheet_titles:
-            print(f"⚠️ Aba '{target_sheet}' não encontrada. Abas detectadas: {sheet_titles}")
-            target_sheet = sheet_titles[0]
-            print(f"➡️ Redirecionando para a aba: '{target_sheet}'")
+            print(f"❌ Erro Crítico: A aba exata '{target_sheet}' não foi encontrada na planilha! Abas detectadas: {sheet_titles}")
+            df_global = pd.DataFrame()
+            return
+            
+        print(f"➡️ Lendo estritamente a aba: '{target_sheet}'")
         
         # 3. Baixar os dados usando range mais forçado para evitar que falhe em formatações vazias
         target_range = f"'{target_sheet}'!A1:ZZ10000"
