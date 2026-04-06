@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoGroup | Legal BI - Contencioso</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chart.js Plugin DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -34,7 +30,6 @@
         #sidebar { transition: margin-left 0.3s ease-in-out, opacity 0.3s ease-in-out; }
         .sidebar-hidden { margin-left: -18rem; opacity: 0; pointer-events: none; }
         .truncate-cell { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        
         .info-icon { transition: color 0.2s; cursor: help; }
         .info-icon:hover { color: #3b82f6; }
         .btn-loading { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
@@ -44,10 +39,9 @@
 
     <div class="flex h-screen overflow-hidden">
         
-        <!-- SIDEBAR -->
         <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30 shadow-xl border-r border-slate-800">
             <div class="mb-10 flex justify-between items-center">
-                <h1 class="text-2xl font-bold tracking-tight text-blue-400">GoGroup <span class="text-white font-light text-sm italic opacity-80">BI Jurídico</span></h1>
+                <h1 class="text-2xl font-bold tracking-tight text-blue-400">BI <span class="text-white font-light text-sm italic opacity-80">Jurídico</span></h1>
                 <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white transition cursor-pointer">
                     <i class="fas fa-times text-xl"></i>
                 </button>
@@ -71,13 +65,11 @@
                             <option value="">Todos os Status</option>
                             <option value="Ativo">Ativo</option>
                             <option value="Encerrado">Encerrado</option>
-                            <option value="Suspenso">Suspenso</option>
                         </select>
                         <select id="filterRisco" onchange="atualizarDashboard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 outline-none">
                             <option value="">Todos os Riscos</option>
                             <option value="Provável">Provável</option>
                             <option value="Possível">Possível</option>
-                            <option value="Remota">Remota</option>
                         </select>
                         <select id="filterMateriaSidebar" onchange="atualizarDashboard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 outline-none">
                             <option value="">Todas as Matérias</option>
@@ -106,14 +98,13 @@
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT -->
         <main class="flex-1 overflow-y-auto p-6 md:p-8 custom-scroll relative z-10" onclick="closeDropdowns(event)">
             
-            <div id="api-alert" class="hidden mb-6 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl shadow-sm flex items-start gap-3">
-                <i class="fas fa-exclamation-triangle text-red-500 mt-1"></i>
+            <div id="api-alert" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl shadow-sm flex items-start gap-3">
+                <i class="fas fa-exclamation-triangle text-amber-500 mt-1"></i>
                 <div>
-                    <h3 class="font-bold text-sm">Atenção</h3>
-                    <p class="text-xs mt-1" id="error-text">O Dashboard não conseguiu conectar à API ou a planilha está vazia.</p>
+                    <h3 class="font-bold text-sm">Estado do Servidor</h3>
+                    <p class="text-xs mt-1" id="error-text"></p>
                 </div>
             </div>
 
@@ -123,19 +114,15 @@
                         <i class="fas fa-bars"></i>
                     </button>
                     <div>
-                        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Jurídico GoGroup</h2>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-widest mt-0.5">Painel de Contencioso Inteligente</p>
+                        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Painel Jurídico</h2>
+                        <p class="text-slate-400 text-xs font-medium uppercase tracking-widest mt-0.5">Gestão de Contencioso Inteligente</p>
                     </div>
                 </div>
-                <div class="flex gap-4 items-center">
-                    <button id="updateBtn" onclick="carregarDadosAPI()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition-all flex items-center">
-                        <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
-                    </button>
-                    <img src="https://s3.amazonaws.com/gupy5/production/companies/41819/emails/1676643247738/e43ea6f0-ae8f-11ed-9f5b-6f83040c5f56.png" alt="GoGroup Logo" class="h-8 object-contain opacity-90">
-                </div>
+                <button id="updateBtn" onclick="carregarDadosAPI()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition-all flex items-center">
+                    <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
+                </button>
             </header>
 
-            <!-- KPIs SUPERIORES -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 border-l-4 border-l-blue-500 relative">
                     <i class="fas fa-info-circle absolute top-4 right-4 text-slate-300 info-icon" title="Soma total do valor da causa dos processos filtrados."></i>
@@ -159,14 +146,12 @@
                 </div>
             </div>
 
-            <!-- LINHA 1: COMPARATIVO E PIZZA (50/50) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <!-- QUADRO COMPARATIVO -->
                 <div class="bg-white p-8 rounded-2xl card-shadow border border-blue-50 bg-gradient-to-br from-white to-blue-50/30 relative flex flex-col justify-center">
                     <i class="fas fa-info-circle absolute top-5 right-5 text-blue-200 info-icon" title="Compara o período atual com o ano anterior."></i>
                     <div class="flex justify-between items-center mb-6">
                         <h4 class="font-bold text-slate-800"><i class="fas fa-balance-scale mr-2 text-blue-500"></i> Comparativo de Períodos</h4>
-                        <span class="text-[9px] bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md uppercase font-bold mr-6 border border-blue-200">Base Anual</span>
+                        <span class="text-[9px] bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md uppercase font-bold border border-blue-200">Base Anual</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="flex flex-col border-r border-slate-100 pr-2">
@@ -184,7 +169,6 @@
                     </div>
                 </div>
 
-                <!-- GRÁFICO DE PIZZA (Matérias) -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative">
                     <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Distribuição percentual por matéria."></i>
                     <h4 class="font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2 text-pink-500"></i> Proporção por Matéria</h4>
@@ -192,53 +176,38 @@
                 </div>
             </div>
 
-            <!-- LINHA 2: EVOLUÇÃO (AMPLIADA) E BARRAS MATÉRIA -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <!-- EVOLUÇÃO TEMPORAL (2/3 da largura) -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative lg:col-span-2">
                     <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Evolução financeira e volumétrica mensal."></i>
-                    <h4 class="font-bold text-slate-800 mb-6"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Comparativo de Anos)</h4>
+                    <h4 class="font-bold text-slate-800 mb-6"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal</h4>
                     <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                 </div>
                 
-                <!-- BARRAS MATÉRIA (1/3 da largura) -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative lg:col-span-1">
                     <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Ranking das matérias com mais processos."></i>
-                    <div class="flex justify-between items-start mb-6">
-                        <h4 class="font-bold text-slate-800"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Top Matérias</h4>
-                        <span id="badgeMateria" class="text-[9px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded border border-indigo-100 font-bold hidden uppercase mr-6">Filtro Ativo</span>
-                    </div>
+                    <h4 class="font-bold text-slate-800 mb-6"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Top Matérias</h4>
                     <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
                 </div>
             </div>
 
-            <!-- LINHA 3: RANKINGS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <!-- TOP CAUSAS -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Processos individuais de maior valor."></i>
                     <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Top 5 Causas (Valor)</h4>
                     <ul id="top-causas" class="space-y-3 text-xs overflow-y-auto pr-1 custom-scroll"></ul>
                 </div>
-                <!-- RANKING UF -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Exposição financeira por estado."></i>
-                    <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Exposição por UF (Completo)</h4>
+                    <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Exposição por UF</h4>
                     <div id="top-uf" class="flex-1 space-y-2 text-xs text-slate-600 overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
-                <!-- ESCRITÓRIOS -->
                 <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Performance e volume por banca de advocacia."></i>
                     <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Escritórios e Performance</h4>
                     <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto pr-2 text-xs custom-scroll"></div>
                 </div>
             </div>
 
-            <!-- TABELA RESUMO POR MATÉRIA -->
             <div class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden mb-8">
-                <div class="p-5 border-b border-slate-100 bg-white flex justify-between items-center relative">
+                <div class="p-5 border-b border-slate-100 bg-white">
                     <h4 class="font-bold text-slate-800">Resumo de Processos por Matéria</h4>
-                    <i class="fas fa-info-circle text-slate-300 info-icon text-lg" title="Visão tabular detalhada por matéria."></i>
                 </div>
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse whitespace-nowrap">
@@ -256,16 +225,11 @@
                 </div>
             </div>
 
-            <!-- BASE CONSOLIDADA -->
             <div class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden mb-8">
-                <div class="p-5 border-b border-slate-100 bg-white flex justify-between items-center relative">
+                <div class="p-5 border-b border-slate-100 bg-white flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <h4 class="font-bold text-slate-800">Base Consolidada (24 Colunas)</h4>
-                        <span id="table-count" class="text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100"></span>
-                    </div>
-                    <div class="flex items-center gap-4">
-                        <span class="text-[10px] text-slate-400 font-medium uppercase tracking-wider hidden sm:block">Clique num título para ordenar</span>
-                        <i class="fas fa-info-circle text-slate-300 info-icon text-lg" title="A sua base de dados completa."></i>
+                        <h4 class="font-bold text-slate-800">Base Consolidada</h4>
+                        <span id="table-count-label" class="text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100"></span>
                     </div>
                 </div>
                 <div class="table-container custom-scroll">
@@ -284,17 +248,13 @@
         Chart.register(ChartDataLabels);
         Chart.defaults.plugins.datalabels.display = false;
 
-        const ENDERECO_SERVIDOR = "gogroup-api.onrender.com"; 
-        const API_URL = `https://${ENDERECO_SERVIDOR}/api/dashboard`;
-        
+        const API_URL = "https://gogroup-api.onrender.com/api/dashboard";
         let DADOS_ORIGINAIS = [];
         let chartEvolucao, chartMaterias, chartPizza;
         let filtrosDinamicos = { escritorio: null, uf: null, materia: null };
         let ordenacaoAtual = { coluna: '', dir: 1 };
 
-        const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
         const colunasBase = [
             'Status','Polo','Número único','Data de Distribuição','Segmento','Ano Distribuição','Tipo de ação',
             'EMPRESA DO GRUPO','Polo Ativo - Nome','Polo Passivo - Nome','Escritório Responsável pela Demanda',
@@ -303,7 +263,7 @@
             'Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'
         ];
 
-        // Função de busca inteligente de chaves (ignora caixa e espaços)
+        // --- UTILITÁRIOS ---
         const findKey = (obj, partialKey) => {
             if (!obj) return null;
             const search = partialKey.toLowerCase().trim();
@@ -326,74 +286,73 @@
             return isNaN(parsed) ? 0 : parsed;
         };
 
+        // --- CARGA DE DADOS ---
         async function carregarDadosAPI() {
-            const updateBtn = document.getElementById('updateBtn');
+            const btn = document.getElementById('updateBtn');
             const alertBox = document.getElementById('api-alert');
-            updateBtn.classList.add('btn-loading');
-            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
-
+            const errorText = document.getElementById('error-text');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
+            btn.classList.add('btn-loading');
+            
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("API Offline ou Erro no Servidor");
+                if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                
                 const data = await response.json();
-                console.log("Dados recebidos da API:", data); // Diagnóstico no Console (F12)
+                DADOS_ORIGINAIS = data.processos || [];
 
-                if (data && data.processos && data.processos.length > 0) {
-                    DADOS_ORIGINAIS = data.processos;
+                if (DADOS_ORIGINAIS.length > 0) {
                     alertBox.classList.add('hidden');
                     initFiltrosBasicos();
                     initHeaderTabela();
                     atualizarDashboard();
                 } else {
-                    throw new Error("A API respondeu, mas a lista de processos está vazia.");
+                    alertBox.classList.remove('hidden');
+                    errorText.innerText = "A API conectou, mas a aba está vazia.";
                 }
             } catch (e) {
-                console.error("Erro na carga:", e);
+                console.error(e);
                 alertBox.classList.remove('hidden');
-                document.getElementById('error-text').innerText = "Erro ao carregar dados: " + e.message;
+                errorText.innerHTML = "<strong>Falha na Ligação:</strong> O servidor pode estar a iniciar (aguarde 1 min) ou está offline. <br> Detalhe: " + e.message;
             } finally {
-                updateBtn.classList.remove('btn-loading');
-                updateBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
+                btn.classList.remove('btn-loading');
             }
         }
 
+        // --- INICIALIZAÇÃO ---
         function initHeaderTabela() {
             document.getElementById('bigTableHeader').innerHTML = colunasBase.map(c => 
-                `<th onclick="ordenarTabela('${c}')" class="px-4 py-3.5 border-r border-slate-800 hover:bg-slate-800 transition cursor-pointer">${c} <i class="fas fa-sort ml-1 opacity-30"></i></th>`
+                `<th onclick=\"ordenarTabela('${c}')\" class=\"px-4 py-3.5 border-r border-slate-800 hover:bg-slate-800 transition cursor-pointer\">${c} <i class=\"fas fa-sort ml-1 opacity-30\"></i></th>`
             ).join('');
         }
 
         function initFiltrosBasicos() {
             const mats = [...new Set(DADOS_ORIGINAIS.map(p => getValue(p, 'Matéria')))].filter(m=>m).sort();
-            document.getElementById('filterMateriaSidebar').innerHTML = '<option value="">Todas as Matérias</option>' + mats.map(m => `<option value="${m}">${m}</option>`).join('');
+            document.getElementById('filterMateriaSidebar').innerHTML = '<option value=\"\">Todas as Matérias</option>' + mats.map(m => `<option value=\"${m}\">${m}</option>`).join('');
 
             const anos = [...new Set(DADOS_ORIGINAIS.map(p => {
-                let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
-                if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
+                let a = getValue(p, 'Ano Distribuição');
+                if (!a) {
+                    let d = getValue(p, 'Data de Distribuição');
+                    if(d) a = String(d).split('-')[0];
+                }
                 return a;
             }))].filter(a=>a).sort((a,b)=>b-a);
 
             let yHtml = '';
             anos.forEach((a, i) => {
-                // Marcar os 2 anos mais recentes por padrão
                 const check = i < 2 ? 'checked' : '';
-                yHtml += `<label class="flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors"><input type="checkbox" value="${a}" class="filter-year mr-3 accent-blue-500" onchange="atualizarDashboard()" ${check}>${a}</label>`;
+                yHtml += `<label class=\"flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors\"><input type=\"checkbox\" value=\"${a}\" class=\"filter-year mr-3 accent-blue-500\" onchange=\"atualizarDashboard()\" ${check}>${a}</label>`;
             });
             document.getElementById('yearDropdown').innerHTML = yHtml;
         }
 
-        function setFiltroDinamico(t, v) { filtrosDinamicos[t] = (filtrosDinamicos[t] === v) ? null : v; atualizarDashboard(); }
-        
-        function limparFiltrosDinamicos() {
-            filtrosDinamicos = { escritorio: null, uf: null, materia: null };
-            document.getElementById('sidebarSearch').value = "";
-            document.getElementById('filterStatus').value = "";
-            document.getElementById('filterRisco').value = "";
-            document.getElementById('filterMateriaSidebar').value = "";
-            atualizarDashboard();
-        }
-
+        // --- FILTRAGEM E ATUALIZAÇÃO ---
         function atualizarDashboard() {
+            if (DADOS_ORIGINAIS.length === 0) return;
+            
             const busca = document.getElementById('sidebarSearch').value.toLowerCase();
             const status = document.getElementById('filterStatus').value;
             const risco = document.getElementById('filterRisco').value;
@@ -402,11 +361,9 @@
 
             let filtrados = DADOS_ORIGINAIS.filter(p => {
                 const b = !busca || JSON.stringify(p).toLowerCase().includes(busca);
-                
                 const pStatus = getValue(p, 'Status');
                 const s = !status || (pStatus && String(pStatus).includes(status));
-                
-                const pRisco = getValue(p, 'Risk Assessment') || getValue(p, 'Risco');
+                const pRisco = getValue(p, 'Risk Assessment');
                 const r = !risco || (pRisco && String(pRisco).includes(risco));
                 
                 const pMat = getValue(p, 'Matéria');
@@ -418,42 +375,38 @@
                 const pUf = getValue(p, 'UF');
                 const uf = !filtrosDinamicos.uf || pUf === filtrosDinamicos.uf;
                 
-                let anoP = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
-                if (!anoP && getValue(p, 'Data')) { anoP = String(getValue(p, 'Data')).split('-')[0]; }
-                const anoMatch = anosSel.length === 0 || anosSel.includes(String(anoP));
-                
+                let a = getValue(p, 'Ano Distribuição');
+                if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
+                const anoMatch = anosSel.length === 0 || anosSel.includes(String(a));
+
                 return b && s && r && mat && esc && uf && anoMatch;
             });
 
             // KPIs
-            const vCausa = filtrados.reduce((s, p) => s + getFloat(p, 'valor da causa'), 0);
-            const vAtual = filtrados.reduce((s, p) => s + getFloat(p, 'valor atualizado'), 0);
-            const isProvavel = (p) => {
-                const r = String(getValue(p, 'Risk Assessment') || getValue(p, 'Risco') || '').toLowerCase();
-                return r.includes('provável') || r.includes('provavel');
-            };
-            const vProv = filtrados.filter(isProvavel).reduce((s, p) => s + getFloat(p, 'valor da causa'), 0);
+            const vCausa = filtrados.reduce((s, p) => s + getFloat(p, 'Valor da causa'), 0);
+            const vAtual = filtrados.reduce((s, p) => s + getFloat(p, 'Valor Atualizado'), 0);
+            const vProv = filtrados.filter(p => String(getValue(p, 'Risk Assessment')||'').includes('Provável')).reduce((s, p) => s + getFloat(p, 'Valor da causa'), 0);
 
             document.getElementById('kpi-total').innerText = vCausa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('kpi-atualizado').innerText = vAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('kpi-provavel').innerText = vProv.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('kpi-count').innerText = filtrados.length;
-            document.getElementById('table-count').innerText = `${filtrados.length} processos`;
+            document.getElementById('table-count-label').innerText = `${filtrados.length} processos`;
 
             atualizarComparativo(filtrados, anosSel);
-            atualizarBadges();
             renderizarGraficos(filtrados, anosSel);
             renderizarRankings(filtrados);
             renderizarResumoMateria(filtrados);
             renderizarTabela(filtrados);
+            atualizarBadges();
         }
 
         function atualizarComparativo(atuais, anos) {
             if(!anos.length) return;
             const ant = (Math.min(...anos.map(Number)) - 1).toString();
             const pass = DADOS_ORIGINAIS.filter(p => {
-                let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
-                if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
+                let a = getValue(p, 'Ano Distribuição');
+                if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
                 return String(a) === ant;
             });
 
@@ -463,66 +416,47 @@
             document.getElementById('compare-vol-perc').innerText = `${pV>0?'+':''}${pV.toFixed(1)}%`;
             document.getElementById('compare-vol-perc').className = `text-xs font-bold pb-1 ${pV<0?'text-green-500':'text-red-500'}`;
 
-            const fA = atuais.reduce((s,p)=>s+getFloat(p, 'valor da causa'),0); 
-            const fP = pass.reduce((s,p)=>s+getFloat(p, 'valor da causa'),0); 
+            const fA = atuais.reduce((s,p)=>s+getFloat(p, 'Valor da causa'),0); 
+            const fP = pass.reduce((s,p)=>s+getFloat(p, 'Valor da causa'),0); 
             const pF = fP ? ((fA-fP)/fP)*100 : 0;
             document.getElementById('compare-fin-val').innerText = fA.toLocaleString('pt-BR', {notation:'compact', maximumFractionDigits:1});
             document.getElementById('compare-fin-perc').innerText = `${pF>0?'+':''}${pF.toFixed(1)}%`;
 
-            const qProv = atuais.filter(p => {
-                const r = String(getValue(p, 'Risk Assessment') || getValue(p, 'Risco') || '').toLowerCase();
-                return r.includes('provável') || r.includes('provavel');
-            }).length;
+            const qProv = atuais.filter(p => String(getValue(p, 'Risk Assessment')||'').includes('Provável')).length;
             const tRisco = vA ? ((qProv/vA)*100).toFixed(2) : '0.00';
             document.getElementById('compare-risk-val').innerText = `${tRisco}%`;
             document.getElementById('compare-risk-perc').innerText = `${qProv} proc.`;
         }
 
-        function atualizarBadges() {
-            const b = document.getElementById('filterBadges');
-            b.innerHTML = ''; let has = false;
-            const add = (l, v) => { if(v){ has=true; b.innerHTML += `<div class="text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-500/30 mb-1.5">${l}: ${v}</div>`; }};
-            add("Materia", filtrosDinamicos.materia); add("UF", filtrosDinamicos.uf); add("Escritório", filtrosDinamicos.escritorio);
-            document.getElementById('activeFiltersSection').classList.toggle('hidden', !has);
-            document.getElementById('badgeMateria').style.display = filtrosDinamicos.materia ? 'block' : 'none';
-        }
-
+        // --- GRÁFICOS ---
         function renderizarGraficos(dados, anos) {
             const matAggr = dados.reduce((a,p)=>{ 
                 const m = getValue(p, 'Matéria') || 'Outros'; 
-                if(!a[m]) a[m] = {q:0, v:0}; a[m].q++; a[m].v += getFloat(p, 'valor da causa'); return a; 
+                if(!a[m]) a[m] = {q:0, v:0}; a[m].q++; a[m].v += getFloat(p, 'Valor da causa'); return a; 
             }, {});
             const mS = Object.entries(matAggr).sort((a,b)=>b[1].q-a[1].q).slice(0,8);
 
-            // PIZZA (PROPORÇÃO)
+            // Pizza
             if(chartPizza) chartPizza.destroy();
             chartPizza = new Chart(document.getElementById('chartPizzaMaterias'), {
                 type: 'doughnut',
                 data: { labels: mS.map(m=>m[0]), datasets: [{ data: mS.map(m=>m[1].q), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'], borderWidth: 0 }] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, cutout: '65%',
-                    plugins: { 
-                        legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } },
-                        datalabels: { display: true, color: '#fff', font: {weight:'bold', size:10}, formatter: (v,ctx) => {
-                            const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
-                            return total ? ((v/total)*100).toFixed(0) + '%' : '0%';
-                        }}
-                    } 
-                }
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } } } }
             });
 
-            // BARRAS (TOP MATÉRIAS)
+            // Barras Matérias
             if(chartMaterias) chartMaterias.destroy();
             chartMaterias = new Chart(document.getElementById('chartMaterias'), {
                 type: 'bar',
-                data: { labels: mS.map(m=>m[0]), datasets: [{ data: mS.map(m=>m[1].q), backgroundColor: mS.map(m=>m[0]===filtrosDinamicos.materia?'#1d4ed8':'#6366f1'), borderRadius: 6 }] },
+                data: { labels: mS.map(m=>m[0]), datasets: [{ data: mS.map(m=>m[1].q), backgroundColor: '#6366f1', borderRadius: 6 }] },
                 options: { 
-                    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: true, anchor:'end', align:'top', font:{size:10, weight:'bold'} } },
+                    responsive: true, maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
                     onClick: (e, els) => { if(els.length) setFiltroDinamico('materia', mS[els[0].index][0]); }
                 }
             });
 
-            // EVOLUÇÃO (LINHA/BARRA)
+            // Evolução
             const sY = [...anos].sort((a,b)=>b-a).slice(0,2);
             const datasets = [];
             const cores = [{b:'rgba(59,130,246,0.6)',l:'#1d4ed8'},{b:'rgba(249,115,22,0.6)',l:'#c2410c'}];
@@ -531,12 +465,12 @@
                 const dAno = MESES_CURTOS.map((_, idx) => {
                     const mesNum = (idx + 1).toString().padStart(2, '0');
                     return dados.filter(p => {
-                        let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
-                        if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
-                        let d = getValue(p, 'Data') || getValue(p, 'Distribuição');
+                        let a = getValue(p, 'Ano Distribuição');
+                        if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
+                        let d = getValue(p, 'Data de Distribuição');
                         let m = d ? String(d).split('-')[1] : null;
                         return String(a) === ano && m === mesNum;
-                    }).reduce((s,p)=>s+getFloat(p, 'valor da causa'), 0);
+                    }).reduce((s,p)=>s+getFloat(p, 'Valor da causa'), 0);
                 });
                 datasets.push({ type: 'bar', label: `Vol ${ano}`, data: dAno, backgroundColor: c.b, borderRadius: 4 });
                 datasets.push({ type: 'line', label: `Tend. ${ano}`, data: dAno, borderColor: c.l, tension: 0.4, borderWidth: 2 });
@@ -548,48 +482,60 @@
             });
         }
 
+        // --- RANKINGS E TABELAS ---
         function renderizarRankings(dados) {
-            // TOP 5
-            document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>getFloat(b,'valor da causa')-getFloat(a,'valor da causa')).slice(0,5).map((p,i)=>
-                `<li class="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500"><span class="font-bold text-blue-500">#${i+1}</span><div class="flex-1 truncate text-[10px] font-bold">${getValue(p, 'Número único') || getValue(p, 'Processo') || 'N/A'}</div><span class="font-black text-slate-800">R$ ${getFloat(p,'valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
+            document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>getFloat(b,'Valor da causa')-getFloat(a,'Valor da causa')).slice(0,5).map((p,i)=>
+                `<li class=\"flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500\"><span class=\"font-bold text-blue-500\">#${i+1}</span><div class=\"flex-1 truncate text-[10px] font-bold\">${getValue(p, 'Número único') || 'N/A'}</div><span class=\"font-black text-slate-800\">R$ ${getFloat(p,'Valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
             ).join('');
             
-            // UF
-            const ufM = dados.reduce((a,p)=>{ const u=getValue(p, 'UF')||'N/I'; a[u]=(a[u]||0)+getFloat(p,'valor da causa'); return a; }, {});
+            const ufM = dados.reduce((a,p)=>{ const u=getValue(p, 'UF')||'N/I'; a[u]=(a[u]||0)+getFloat(p,'Valor da causa'); return a; }, {});
             const sortedUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
             const maxUF = sortedUF.length ? sortedUF[0][1] : 1;
             document.getElementById('top-uf').innerHTML = sortedUF.map(([u,v])=>
-                `<div onclick="setFiltroDinamico('uf','${u}')" class="p-2 rounded-lg clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100 border border-blue-200':'bg-white'}"><div class="flex justify-between font-bold mb-1"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class="w-full bg-slate-100 h-1.5 rounded-full"><div class="bg-blue-500 h-full rounded-full" style="width:${(v/maxUF*100)}%"></div></div></div>`
+                `<div onclick=\"setFiltroDinamico('uf','${u}')\" class=\"p-2 rounded-lg clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100 border border-blue-200':'bg-white'}\"><div class=\"flex justify-between font-bold mb-1\"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class=\"w-full bg-slate-100 h-1.5 rounded-full\"><div class=\"bg-blue-500 h-full rounded-full\" style=\"width:${(v/maxUF*100)}%\"></div></div></div>`
             ).join('');
 
-            // ESCRITÓRIOS
-            const escM = dados.reduce((a,p)=>{ const e=getValue(p, 'Escritório')||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'valor da causa'); return a; }, {});
+            const escM = dados.reduce((a,p)=>{ const e=getValue(p, 'Escritório')||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'Valor da causa'); return a; }, {});
             document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i])=>
-                `<div onclick="setFiltroDinamico('escritorio','${e}')" class="p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}"><div class="flex justify-between font-bold text-[10px] mb-1"><span>${e}</span><span class="text-blue-600">${i.q}</span></div><div class="text-[9px] text-slate-500">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
+                `<div onclick=\"setFiltroDinamico('escritorio','${e}')\" class=\"p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}\"><div class=\"flex justify-between font-bold text-[10px] mb-1\"><span>${e}</span><span class=\"text-blue-600\">${i.q}</span></div><div class=\"text-[9px] text-slate-500\">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
             ).join('');
         }
 
         function renderizarResumoMateria(dados) {
-            const m = dados.reduce((a,p)=>{ const mat=getValue(p, 'Matéria')||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p,'valor da causa'); a[mat].va+=getFloat(p,'valor atualizado'); return a; },{});
+            const m = dados.reduce((a,p)=>{ const mat=getValue(p, 'Matéria')||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p, 'Valor da causa'); a[mat].va+=getFloat(p, 'Valor Atualizado'); return a; },{});
             const t = dados.length || 1;
             document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc-a[1].vc).map(([mat,i])=>
-                `<tr class="hover:bg-slate-50 transition-colors"><td class="px-5 py-3 font-bold text-slate-700">${mat}</td><td class="px-5 py-3 text-center">${i.q}</td><td class="px-5 py-3 text-right font-bold">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-right text-green-600 font-bold">R$ ${i.va.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/t)*100).toFixed(1)}%</td></tr>`
+                `<tr class=\"hover:bg-slate-50 transition-colors\"><td class=\"px-5 py-3 font-bold text-slate-700\">${mat}</td><td class=\"px-5 py-3 text-center\">${i.q}</td><td class=\"px-5 py-3 text-right font-bold\">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class=\"px-5 py-3 text-right text-green-600 font-bold\">R$ ${i.va.toLocaleString('pt-BR')}</td><td class=\"px-5 py-3 text-center text-slate-400 font-medium\">${((i.q/t)*100).toFixed(1)}%</td></tr>`
             ).join('');
         }
 
         function renderizarTabela(dados) {
             document.getElementById('processTableBody').innerHTML = dados.map(p => 
-                `<tr class="hover:bg-slate-50 transition-colors">${colunasBase.map(c => {
+                `<tr class=\"hover:bg-slate-50 transition-colors\">${colunasBase.map(c => {
                     let v = getValue(p, c) || '-'; 
-                    let cls = "px-4 py-3 truncate-cell text-slate-600";
-                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += " text-right font-semibold text-slate-800"; }
-                    if(c==='Status') v = `<span class="px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider">${v}</span>`;
-                    if(c==='Número único') cls += " text-blue-600 font-bold font-mono";
-                    return `<td class="${cls}" title="${String(getValue(p, c)||'-')}">${v}</td>`;
+                    let cls = \"px-4 py-3 truncate-cell text-slate-600\";
+                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += \" text-right font-semibold text-slate-800\"; }
+                    if(c==='Status') v = `<span class=\"px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider\">${v}</span>`;
+                    if(c==='Número único') cls += \" text-blue-600 font-bold font-mono\";
+                    return `<td class=\"${cls}\" title=\"${String(getValue(p, c)||'-')}\">${v}</td>`;
                 }).join('')}</tr>`
             ).join('');
         }
 
+        // --- INTERFACE ---
+        function setFiltroDinamico(t, v) { filtrosDinamicos[t] = (filtrosDinamicos[t] === v) ? null : v; atualizarDashboard(); }
+        function limparFiltrosDinamicos() { filtrosDinamicos = { escritorio: null, uf: null, materia: null }; atualizarDashboard(); }
+        function atualizarBadges() {
+            const b = document.getElementById('filterBadges');
+            b.innerHTML = ''; let has = false;
+            const add = (l, v) => { if(v){ has=true; b.innerHTML += `<div class=\"text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-500/30 mb-1.5\">${l}: ${v}</div>`; }};
+            add(\"Materia\", filtrosDinamicos.materia); add(\"UF\", filtrosDinamicos.uf); add(\"Escritório\", filtrosDinamicos.escritorio);
+            document.getElementById('activeFiltersSection').classList.toggle('hidden', !has);
+        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
+        function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
+        function closeDropdowns(e) { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+        function debounceSearch() { atualizarDashboard(); }
         function ordenarTabela(c) {
             const d = (ordenacaoAtual.coluna === c) ? -ordenacaoAtual.dir : 1;
             ordenacaoAtual = { coluna: c, dir: d };
@@ -600,11 +546,6 @@
             });
             atualizarDashboard();
         }
-
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
-        function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
-        function closeDropdowns(e) { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
-        function debounceSearch() { atualizarDashboard(); }
 
         window.onload = carregarDadosAPI;
     </script>
