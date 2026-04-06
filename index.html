@@ -112,8 +112,8 @@
             <div id="api-alert" class="hidden mb-6 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl shadow-sm flex items-start gap-3">
                 <i class="fas fa-exclamation-triangle text-red-500 mt-1"></i>
                 <div>
-                    <h3 class="font-bold text-sm">Falha na Conexão</h3>
-                    <p class="text-xs mt-1" id="error-text">O Dashboard não conseguiu conectar à API.</p>
+                    <h3 class="font-bold text-sm">Atenção</h3>
+                    <p class="text-xs mt-1" id="error-text">O Dashboard não conseguiu conectar à API ou a planilha está vazia.</p>
                 </div>
             </div>
 
@@ -303,12 +303,22 @@
             'Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'
         ];
 
+        // Função de busca inteligente de chaves (ignora caixa e espaços)
+        const findKey = (obj, partialKey) => {
+            if (!obj) return null;
+            const search = partialKey.toLowerCase().trim();
+            return Object.keys(obj).find(k => k.toLowerCase().trim().includes(search));
+        };
+
+        const getValue = (obj, partialKey) => {
+            const key = findKey(obj, partialKey);
+            return key ? obj[key] : null;
+        };
+
         const getFloat = (obj, partialKey) => {
-            const key = Object.keys(obj).find(k => k.toLowerCase().includes(partialKey.toLowerCase()));
-            if (!key) return 0;
-            let val = obj[key];
+            let val = getValue(obj, partialKey);
+            if (val === null || val === undefined) return 0;
             if (typeof val === 'number') return val;
-            if (!val) return 0;
             let strVal = String(val).replace('R$', '').replace(/\s/g, '').trim();
             if (strVal.includes(',') && strVal.includes('.')) { strVal = strVal.replace(/\./g, '').replace(',', '.'); } 
             else if (strVal.includes(',')) { strVal = strVal.replace(',', '.'); }
@@ -320,23 +330,27 @@
             const updateBtn = document.getElementById('updateBtn');
             const alertBox = document.getElementById('api-alert');
             updateBtn.classList.add('btn-loading');
-            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Atualizando...';
+            updateBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
 
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) throw new Error("API Offline");
+                if (!response.ok) throw new Error("API Offline ou Erro no Servidor");
                 const data = await response.json();
-                if (data.processos) {
+                console.log("Dados recebidos da API:", data); // Diagnóstico no Console (F12)
+
+                if (data && data.processos && data.processos.length > 0) {
                     DADOS_ORIGINAIS = data.processos;
                     alertBox.classList.add('hidden');
                     initFiltrosBasicos();
                     initHeaderTabela();
                     atualizarDashboard();
+                } else {
+                    throw new Error("A API respondeu, mas a lista de processos está vazia.");
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Erro na carga:", e);
                 alertBox.classList.remove('hidden');
-                document.getElementById('error-text').innerText = "Erro ao conectar à API. " + e.message;
+                document.getElementById('error-text').innerText = "Erro ao carregar dados: " + e.message;
             } finally {
                 updateBtn.classList.remove('btn-loading');
                 updateBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
@@ -350,12 +364,18 @@
         }
 
         function initFiltrosBasicos() {
-            const mats = [...new Set(DADOS_ORIGINAIS.map(p => p['Matéria']))].filter(m=>m).sort();
+            const mats = [...new Set(DADOS_ORIGINAIS.map(p => getValue(p, 'Matéria')))].filter(m=>m).sort();
             document.getElementById('filterMateriaSidebar').innerHTML = '<option value="">Todas as Matérias</option>' + mats.map(m => `<option value="${m}">${m}</option>`).join('');
 
-            const anos = [...new Set(DADOS_ORIGINAIS.map(p => p['Ano Distribuição']))].filter(a=>a).sort((a,b)=>b-a);
+            const anos = [...new Set(DADOS_ORIGINAIS.map(p => {
+                let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
+                if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
+                return a;
+            }))].filter(a=>a).sort((a,b)=>b-a);
+
             let yHtml = '';
             anos.forEach((a, i) => {
+                // Marcar os 2 anos mais recentes por padrão
                 const check = i < 2 ? 'checked' : '';
                 yHtml += `<label class="flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors"><input type="checkbox" value="${a}" class="filter-year mr-3 accent-blue-500" onchange="atualizarDashboard()" ${check}>${a}</label>`;
             });
@@ -378,24 +398,40 @@
             const status = document.getElementById('filterStatus').value;
             const risco = document.getElementById('filterRisco').value;
             const mSide = document.getElementById('filterMateriaSidebar').value;
-            const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(e => e.value);
+            const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(e => String(e.value));
 
             let filtrados = DADOS_ORIGINAIS.filter(p => {
                 const b = !busca || JSON.stringify(p).toLowerCase().includes(busca);
-                const s = !status || p['Status'] === status;
-                const r = !risco || String(p['Risk Assessment (probabilidade de PERDA)']).includes(risco);
-                const mat = (!mSide || p['Matéria'] === mSide) && (!filtrosDinamicos.materia || p['Matéria'] === filtrosDinamicos.materia);
-                const esc = !filtrosDinamicos.escritorio || p['Escritório Responsável pela Demanda'] === filtrosDinamicos.escritorio;
-                const uf = !filtrosDinamicos.uf || p['UF'] === filtrosDinamicos.uf;
-                const anoP = String(p['Ano Distribuição']);
-                const anoMatch = anosSel.length === 0 || anosSel.includes(anoP);
+                
+                const pStatus = getValue(p, 'Status');
+                const s = !status || (pStatus && String(pStatus).includes(status));
+                
+                const pRisco = getValue(p, 'Risk Assessment') || getValue(p, 'Risco');
+                const r = !risco || (pRisco && String(pRisco).includes(risco));
+                
+                const pMat = getValue(p, 'Matéria');
+                const mat = (!mSide || pMat === mSide) && (!filtrosDinamicos.materia || pMat === filtrosDinamicos.materia);
+                
+                const pEsc = getValue(p, 'Escritório');
+                const esc = !filtrosDinamicos.escritorio || (pEsc && String(pEsc).includes(filtrosDinamicos.escritorio));
+                
+                const pUf = getValue(p, 'UF');
+                const uf = !filtrosDinamicos.uf || pUf === filtrosDinamicos.uf;
+                
+                let anoP = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
+                if (!anoP && getValue(p, 'Data')) { anoP = String(getValue(p, 'Data')).split('-')[0]; }
+                const anoMatch = anosSel.length === 0 || anosSel.includes(String(anoP));
+                
                 return b && s && r && mat && esc && uf && anoMatch;
             });
 
             // KPIs
             const vCausa = filtrados.reduce((s, p) => s + getFloat(p, 'valor da causa'), 0);
             const vAtual = filtrados.reduce((s, p) => s + getFloat(p, 'valor atualizado'), 0);
-            const isProvavel = (p) => String(p['Risk Assessment (probabilidade de PERDA)']||'').toLowerCase().includes('provável');
+            const isProvavel = (p) => {
+                const r = String(getValue(p, 'Risk Assessment') || getValue(p, 'Risco') || '').toLowerCase();
+                return r.includes('provável') || r.includes('provavel');
+            };
             const vProv = filtrados.filter(isProvavel).reduce((s, p) => s + getFloat(p, 'valor da causa'), 0);
 
             document.getElementById('kpi-total').innerText = vCausa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -415,7 +451,11 @@
         function atualizarComparativo(atuais, anos) {
             if(!anos.length) return;
             const ant = (Math.min(...anos.map(Number)) - 1).toString();
-            const pass = DADOS_ORIGINAIS.filter(p => String(p['Ano Distribuição']) === ant);
+            const pass = DADOS_ORIGINAIS.filter(p => {
+                let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
+                if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
+                return String(a) === ant;
+            });
 
             const vA = atuais.length; const vP = pass.length; 
             const pV = vP ? ((vA-vP)/vP)*100 : 0;
@@ -429,8 +469,10 @@
             document.getElementById('compare-fin-val').innerText = fA.toLocaleString('pt-BR', {notation:'compact', maximumFractionDigits:1});
             document.getElementById('compare-fin-perc').innerText = `${pF>0?'+':''}${pF.toFixed(1)}%`;
 
-            const isProvavel = (p) => String(p['Risk Assessment (probabilidade de PERDA)']||'').toLowerCase().includes('provável');
-            const qProv = atuais.filter(isProvavel).length;
+            const qProv = atuais.filter(p => {
+                const r = String(getValue(p, 'Risk Assessment') || getValue(p, 'Risco') || '').toLowerCase();
+                return r.includes('provável') || r.includes('provavel');
+            }).length;
             const tRisco = vA ? ((qProv/vA)*100).toFixed(2) : '0.00';
             document.getElementById('compare-risk-val').innerText = `${tRisco}%`;
             document.getElementById('compare-risk-perc').innerText = `${qProv} proc.`;
@@ -447,7 +489,7 @@
 
         function renderizarGraficos(dados, anos) {
             const matAggr = dados.reduce((a,p)=>{ 
-                const m = p['Matéria']||'Outros'; 
+                const m = getValue(p, 'Matéria') || 'Outros'; 
                 if(!a[m]) a[m] = {q:0, v:0}; a[m].q++; a[m].v += getFloat(p, 'valor da causa'); return a; 
             }, {});
             const mS = Object.entries(matAggr).sort((a,b)=>b[1].q-a[1].q).slice(0,8);
@@ -463,7 +505,7 @@
                         legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } },
                         datalabels: { display: true, color: '#fff', font: {weight:'bold', size:10}, formatter: (v,ctx) => {
                             const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
-                            return ((v/total)*100).toFixed(0) + '%';
+                            return total ? ((v/total)*100).toFixed(0) + '%' : '0%';
                         }}
                     } 
                 }
@@ -488,7 +530,13 @@
                 const c = cores[i%2];
                 const dAno = MESES_CURTOS.map((_, idx) => {
                     const mesNum = (idx + 1).toString().padStart(2, '0');
-                    return dados.filter(p => String(p['Ano Distribuição']) === ano && String(p['Data de Distribuição']).split('-')[1] === mesNum).reduce((s,p)=>s+getFloat(p, 'valor da causa'), 0);
+                    return dados.filter(p => {
+                        let a = getValue(p, 'Ano Distribuição') || getValue(p, 'Ano');
+                        if (!a && getValue(p, 'Data')) { a = String(getValue(p, 'Data')).split('-')[0]; }
+                        let d = getValue(p, 'Data') || getValue(p, 'Distribuição');
+                        let m = d ? String(d).split('-')[1] : null;
+                        return String(a) === ano && m === mesNum;
+                    }).reduce((s,p)=>s+getFloat(p, 'valor da causa'), 0);
                 });
                 datasets.push({ type: 'bar', label: `Vol ${ano}`, data: dAno, backgroundColor: c.b, borderRadius: 4 });
                 datasets.push({ type: 'line', label: `Tend. ${ano}`, data: dAno, borderColor: c.l, tension: 0.4, borderWidth: 2 });
@@ -503,11 +551,11 @@
         function renderizarRankings(dados) {
             // TOP 5
             document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>getFloat(b,'valor da causa')-getFloat(a,'valor da causa')).slice(0,5).map((p,i)=>
-                `<li class="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500"><span class="font-bold text-blue-500">#${i+1}</span><div class="flex-1 truncate text-[10px] font-bold">${p['Número único']}</div><span class="font-black text-slate-800">R$ ${getFloat(p,'valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
+                `<li class="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500"><span class="font-bold text-blue-500">#${i+1}</span><div class="flex-1 truncate text-[10px] font-bold">${getValue(p, 'Número único') || getValue(p, 'Processo') || 'N/A'}</div><span class="font-black text-slate-800">R$ ${getFloat(p,'valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
             ).join('');
             
             // UF
-            const ufM = dados.reduce((a,p)=>{ const u=p['UF']||'N/I'; a[u]=(a[u]||0)+getFloat(p,'valor da causa'); return a; }, {});
+            const ufM = dados.reduce((a,p)=>{ const u=getValue(p, 'UF')||'N/I'; a[u]=(a[u]||0)+getFloat(p,'valor da causa'); return a; }, {});
             const sortedUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
             const maxUF = sortedUF.length ? sortedUF[0][1] : 1;
             document.getElementById('top-uf').innerHTML = sortedUF.map(([u,v])=>
@@ -515,14 +563,14 @@
             ).join('');
 
             // ESCRITÓRIOS
-            const escM = dados.reduce((a,p)=>{ const e=p['Escritório Responsável pela Demanda']||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'valor da causa'); return a; }, {});
+            const escM = dados.reduce((a,p)=>{ const e=getValue(p, 'Escritório')||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'valor da causa'); return a; }, {});
             document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i])=>
                 `<div onclick="setFiltroDinamico('escritorio','${e}')" class="p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}"><div class="flex justify-between font-bold text-[10px] mb-1"><span>${e}</span><span class="text-blue-600">${i.q}</span></div><div class="text-[9px] text-slate-500">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
             ).join('');
         }
 
         function renderizarResumoMateria(dados) {
-            const m = dados.reduce((a,p)=>{ const mat=p['Matéria']||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p,'valor da causa'); a[mat].va+=getFloat(p,'valor atualizado'); return a; },{});
+            const m = dados.reduce((a,p)=>{ const mat=getValue(p, 'Matéria')||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p,'valor da causa'); a[mat].va+=getFloat(p,'valor atualizado'); return a; },{});
             const t = dados.length || 1;
             document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc-a[1].vc).map(([mat,i])=>
                 `<tr class="hover:bg-slate-50 transition-colors"><td class="px-5 py-3 font-bold text-slate-700">${mat}</td><td class="px-5 py-3 text-center">${i.q}</td><td class="px-5 py-3 text-right font-bold">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-right text-green-600 font-bold">R$ ${i.va.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/t)*100).toFixed(1)}%</td></tr>`
@@ -532,11 +580,12 @@
         function renderizarTabela(dados) {
             document.getElementById('processTableBody').innerHTML = dados.map(p => 
                 `<tr class="hover:bg-slate-50 transition-colors">${colunasBase.map(c => {
-                    let v = p[c] || '-'; let cls = "px-4 py-3 truncate-cell text-slate-600";
-                    if(c.includes('Valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += " text-right font-semibold text-slate-800"; }
+                    let v = getValue(p, c) || '-'; 
+                    let cls = "px-4 py-3 truncate-cell text-slate-600";
+                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += " text-right font-semibold text-slate-800"; }
                     if(c==='Status') v = `<span class="px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider">${v}</span>`;
                     if(c==='Número único') cls += " text-blue-600 font-bold font-mono";
-                    return `<td class="${cls}" title="${String(p[c]||'-')}">${v}</td>`;
+                    return `<td class="${cls}" title="${String(getValue(p, c)||'-')}">${v}</td>`;
                 }).join('')}</tr>`
             ).join('');
         }
@@ -545,8 +594,8 @@
             const d = (ordenacaoAtual.coluna === c) ? -ordenacaoAtual.dir : 1;
             ordenacaoAtual = { coluna: c, dir: d };
             DADOS_ORIGINAIS.sort((a,b) => {
-                let vA = a[c]; let vB = b[c];
-                if(c.includes('Valor')) { vA = getFloat(a,c); vB = getFloat(b,c); return (vA-vB)*d; }
+                let vA = getValue(a, c); let vB = getValue(b, c);
+                if(c.toLowerCase().includes('valor')) { vA = getFloat(a,c); vB = getFloat(b,c); return (vA-vB)*d; }
                 return String(vA).localeCompare(String(vB)) * d;
             });
             atualizarDashboard();
