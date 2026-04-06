@@ -1,5 +1,6 @@
 import os
 import uvicorn
+import json
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
@@ -8,7 +9,7 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import traceback
 
-app = FastAPI(title="GoGroup - API Contencioso Final")
+app = FastAPI(title="GoGroup - BI API Final")
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,53 +21,50 @@ app.add_middleware(
 df_global = pd.DataFrame()
 
 def limpar_valor_monetario(valor):
-    """ Converte formatos de moeda para float """
     if pd.isna(valor) or valor == '' or valor == '-':
         return 0.0
     if isinstance(valor, (int, float)):
         return float(valor)
     if isinstance(valor, str):
         v_str = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
-        if v_str == '' or v_str == '-':
-            return 0.0
-        try:
-            return float(v_str)
-        except ValueError:
-            return 0.0
+        if v_str == '' or v_str == '-': return 0.0
+        try: return float(v_str)
+        except ValueError: return 0.0
     return 0.0
 
 def load_data():
     global df_global
     try:
-        print("🔍 Iniciando busca de dados no Google Sheets...")
+        print("🔍 A iniciar busca de dados no Google Sheets...")
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         SERVICE_ACCOUNT_FILE = 'credenciais.json' 
         SPREADSHEET_ID = '1ekyHYNG_tRp8Ar6iZjtqjM3RgX4jAc2H'
         
         if not os.path.exists(SERVICE_ACCOUNT_FILE):
-            print(f"❌ Erro: {SERVICE_ACCOUNT_FILE} não existe.")
+            print(f"❌ Erro: O ficheiro {SERVICE_ACCOUNT_FILE} não existe.")
             return
 
-        creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE, scopes=SCOPES
+        # =========================================================
+        # FIX: CORREÇÃO AUTOMÁTICA DA ASSINATURA JWT (PRIVATE KEY)
+        # =========================================================
+        with open(SERVICE_ACCOUNT_FILE, 'r', encoding='utf-8') as f:
+            creds_info = json.load(f)
+            
+        if "\\n" in creds_info.get('private_key', ''):
+            creds_info['private_key'] = creds_info['private_key'].replace("\\n", "\n")
+            print("💡 Chave JWT higienizada: Quebras de linha (\\n) foram corrigidas automaticamente.")
+
+        creds = service_account.Credentials.from_service_account_info(
+            creds_info, scopes=SCOPES
         )
+        # =========================================================
+
         service = build('sheets', 'v4', credentials=creds)
         
-        # 1. Mapear as abas reais da planilha
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
-        sheets = sheet_metadata.get('sheets', '')
-        sheet_titles = [s['properties']['title'] for s in sheets]
-        
-        # 2. LER APENAS A ABA EXATA
+        # LER APENAS A ABA EXATA
         target_sheet = 'Planilha Completa - Grupo'
-        if target_sheet not in sheet_titles:
-            print(f"❌ Erro Crítico: A aba exata '{target_sheet}' não foi encontrada na planilha! Abas detectadas: {sheet_titles}")
-            df_global = pd.DataFrame()
-            return
-            
-        print(f"➡️ Lendo estritamente a aba: '{target_sheet}'")
+        print(f"➡️ A ler estritamente a aba: '{target_sheet}'")
         
-        # 3. Baixar os dados usando range mais forçado para evitar que falhe em formatações vazias
         target_range = f"'{target_sheet}'!A1:ZZ10000"
         result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=target_range).execute()
         values = result.get('values', [])
@@ -74,35 +72,27 @@ def load_data():
         print(f"📊 Total de linhas brutas extraídas: {len(values)}")
         
         if not values:
-            print(f"⚠️ A aba '{target_sheet}' está completamente vazia ou sem dados acessíveis.")
+            print(f"⚠️ A aba '{target_sheet}' está completamente vazia.")
             df_global = pd.DataFrame()
             return
 
-        # 4. Localizar inteligentemente o cabeçalho (tolerância ajustada para 2 colunas preenchidas)
+        # Localizar o cabeçalho (linha com pelo menos 2 colunas preenchidas)
         header_idx = 0
         for i, row in enumerate(values):
-            filled_cells = len([c for c in row if str(c).strip()])
-            if filled_cells >= 2:
+            if len([c for c in row if str(c).strip()]) >= 2:
                 header_idx = i
                 break
                 
-        print(f"📌 Cabeçalho detectado na linha {header_idx + 1} do Excel.")
+        print(f"📌 Cabeçalho detetado na linha {header_idx + 1} do Excel.")
         
         raw_headers = values[header_idx]
         headers = [str(h).strip() if h else f"Coluna_Sem_Nome_{i}" for i, h in enumerate(raw_headers)]
         
         data = values[header_idx + 1:]
         
-        if not data:
-            print("⚠️ Não existem dados abaixo do cabeçalho.")
-            df_global = pd.DataFrame()
-            return
-
-        # 5. Criar a Tabela e Limpar "Fantasmas"
+        # Limpar linhas vazias
         data_padded = [row + [''] * (len(headers) - len(row)) for row in data]
         df = pd.DataFrame(data_padded, columns=headers)
-        
-        # Deleta linhas inteiramente vazias
         df = df.replace('', np.nan).dropna(how='all').fillna('')
         
         if df.empty:
@@ -110,15 +100,13 @@ def load_data():
             df_global = pd.DataFrame()
             return
         
-        # 6. Processamento de dados financeiros
+        # Processamento financeiro
         for col in df.columns:
-            col_lower = str(col).lower()
-            if any(k in col_lower for k in ['valor', 'causa', 'atualizado', 'garantia', 'condenação', 'acordo']):
+            if any(k in str(col).lower() for k in ['valor', 'causa', 'atualizado', 'garantia', 'condenação', 'acordo']):
                 df[col] = df[col].apply(limpar_valor_monetario)
         
-        df = df.replace([np.inf, -np.inf], np.nan).fillna("")
         df_global = df
-        print(f"✅ Sucesso Absoluto: {len(df_global)} processos estruturados e carregados!")
+        print(f"✅ Sucesso: {len(df_global)} processos carregados!")
         
     except Exception as e:
         print(f"❌ Erro fatal no Python:")
@@ -128,7 +116,6 @@ def load_data():
 def startup_event():
     load_data()
 
-# Silencia o aviso 404 do ícone
 @app.get("/favicon.ico", include_in_schema=False)
 def favicon():
     return Response(content=b"", media_type="image/x-icon")
