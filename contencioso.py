@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
 
-app = FastAPI(title="API Contencioso GoGroup - Data Engine Server")
+app = FastAPI(title="API Contencioso GoGroup - Data Engine")
 
-# Permite que o HTML local converse com o servidor Python
+# Habilita a comunicação com o Frontend HTML
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,40 +15,72 @@ app.add_middleware(
 
 df_global = pd.DataFrame()
 
+def limpar_valor_monetario(valor):
+    """ Função inteligente para converter qualquer formato de dinheiro do Excel num número matemático puro """
+    if pd.isna(valor):
+        return 0.0
+    # Se já for um número (inteiro ou decimal), mantém-no
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    
+    # Se for texto (string), remove R$, espaços e trata a pontuação brasileira
+    if isinstance(valor, str):
+        v_str = valor.replace('R$', '').replace(' ', '').strip()
+        if v_str == '' or v_str == '-':
+            return 0.0
+        
+        # Se tiver ponto e vírgula (ex: 1.500.000,00) -> Remove pontos e troca vírgula por ponto
+        if '.' in v_str and ',' in v_str:
+            v_str = v_str.replace('.', '').replace(',', '.')
+        # Se tiver apenas vírgula (ex: 1500,00) -> Troca a vírgula por ponto
+        elif ',' in v_str:
+            v_str = v_str.replace(',', '.')
+        
+        try:
+            return float(v_str)
+        except ValueError:
+            return 0.0
+            
+    return 0.0
+
 def load_data():
     global df_global
     caminho_arquivo = r"H:\Meu Drive\Contencioso_Tributario\Contencioso_GoGroup.xlsx"
     
     try:
-        # 1. Lê o Excel
+        # Lê o Excel e remove espaços vazios acidentais nos cabeçalhos
         df = pd.read_excel(caminho_arquivo)
         df.columns = df.columns.str.strip()
         
-        # 2. Tratamento Financeiro (limpa R$, pontos e converte para número puro)
-        cols_fin = ["Valor da causa", "Valor Atualizado", "Valor em Garantia", "Valor de Condenação ou Acordo (casos encerrados)"]
-        for col in cols_fin:
-            if col in df.columns:
-                if df[col].dtype == object:
-                    df[col] = df[col].astype(str).str.replace('R$', '', regex=False).str.replace('.', '', regex=False).str.replace(',', '.', regex=False).str.strip()
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+        # 1. TRATAMENTO FINANCEIRO INTELIGENTE
+        # Identifica automaticamente qualquer coluna que remeta a valores
+        cols_financeiras = [col for col in df.columns if 'valor' in col.lower() or 'garantia' in col.lower() or 'condenação' in col.lower()]
         
-        # 3. Tratamento de Datas (O Javascript faz o .split('-') para pegar o ano e mês)
-        # Convertendo para o formato ISO AAAA-MM-DD
+        for col in cols_financeiras:
+            df[col] = df[col].apply(limpar_valor_monetario)
+        
+        # 2. TRATAMENTO DE DATAS E ANOS
         if "Data de Distribuição" in df.columns:
-            df["Data de Distribuição"] = pd.to_datetime(df["Data de Distribuição"], errors='coerce').dt.strftime('%Y-%m-%d')
+            df["Data de Distribuição"] = pd.to_datetime(df["Data de Distribuição"], errors='coerce').dt.strftime('%Y-%m-%d').fillna("")
             
-        # 4. Tratamento do "Ano Distribuição" para evitar casas decimais como "2024.0"
-        if "Ano Distribuição" in df.columns:
-             df["Ano Distribuição"] = pd.to_numeric(df["Ano Distribuição"], errors='coerce').fillna(0).astype(int).astype(str)
-             df["Ano Distribuição"] = df["Ano Distribuição"].replace('0', '')
-             
-        if "Anos Distribuição" in df.columns:
-             df["Anos Distribuição"] = pd.to_numeric(df["Anos Distribuição"], errors='coerce').fillna(0).astype(int).astype(str)
-             df["Anos Distribuição"] = df["Anos Distribuição"].replace('0', '')
+        for col_ano in ["Ano Distribuição", "Anos Distribuição"]:
+            if col_ano in df.columns:
+                 df[col_ano] = pd.to_numeric(df[col_ano], errors='coerce').fillna(0).astype(int).astype(str)
+                 df[col_ano] = df[col_ano].replace('0', '')
 
-        # 5. Preenche vazios para não quebrar o JSON
-        df_global = df.fillna("")
-        print(f"✅ Servidor Pronto: {len(df_global)} processos carregados e limpos para o BI.")
+        # 3. GARANTIA DE TEXTO NAS CLASSIFICAÇÕES
+        # Evita que campos vazios de texto originem erros de 'NaN' na filtragem do JavaScript
+        cols_texto = ["Risk Assessment (probabilidade de PERDA)", "Status", "Matéria", "UF"]
+        for col in cols_texto:
+            if col in df.columns:
+                df[col] = df[col].astype(str).replace('nan', '')
+
+        # 4. LIMPEZA EXTREMA GERAL
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df = df.fillna("")
+        
+        df_global = df
+        print(f"✅ Servidor Pronto: {len(df_global)} processos carregados e tratados sem erros matemáticos.")
         
     except Exception as e:
         print(f"❌ Erro crítico ao ler o Excel: {e}")
@@ -57,11 +89,8 @@ def load_data():
 def startup_event():
     load_data()
 
-# O seu HTML atual faz uma requisição GET simples e espera a chave "processos"
 @app.get("/api/dashboard")
 def get_all_data():
-    # Converte a tabela inteira para um formato que o Javascript entende
+    # Envia os dados encapsulados para o Frontend processar
     registros = df_global.to_dict(orient="records")
-    
-    # Envia encapsulado na chave 'processos', exatamente como o seu JS pede: data.processos
     return {"processos": registros}
