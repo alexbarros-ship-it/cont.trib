@@ -7,9 +7,8 @@ import numpy as np
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-app = FastAPI(title="GoGroup - API Contencioso (Google Sheets)")
+app = FastAPI(title="GoGroup - API Contencioso v3")
 
-# Configuração de CORS para permitir que o Dashboard (HTML) aceda aos dados
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,24 +16,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Variável global para armazenar os processos em memória
 df_global = pd.DataFrame()
 
 def limpar_valor_monetario(valor):
-    """ Converte strings de moeda (ex: R$ 1.250,00) em floats (1250.0) """
+    """ Converte formatos de moeda para float """
     if pd.isna(valor) or valor == '' or valor == '-':
         return 0.0
     if isinstance(valor, (int, float)):
         return float(valor)
     if isinstance(valor, str):
-        v_str = valor.replace('R$', '').replace(' ', '').strip()
+        v_str = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
         if v_str == '' or v_str == '-':
             return 0.0
-        # Trata o formato brasileiro (ponto para milhar, vírgula para decimal)
-        if '.' in v_str and ',' in v_str:
-            v_str = v_str.replace('.', '').replace(',', '.')
-        elif ',' in v_str:
-            v_str = v_str.replace(',', '.')
         try:
             return float(v_str)
         except ValueError:
@@ -42,100 +35,77 @@ def limpar_valor_monetario(valor):
     return 0.0
 
 def load_data():
-    """ Carrega os dados diretamente da API do Google Sheets """
     global df_global
     try:
-        print("A tentar ligar à Google Sheets API...")
-        
-        # Definição do escopo e ficheiro de credenciais
+        print("🔍 Iniciando busca de dados no Google Sheets...")
         SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         SERVICE_ACCOUNT_FILE = 'credenciais.json' 
         
-        # Parâmetros da sua planilha (ID e Aba)
         SPREADSHEET_ID = '1ekyHYNG_tRp8Ar6iZjtqjM3RgX4jAc2H'
-        RANGE_NAME = 'Planilha Completa - Grupo' 
+        # Mudando para capturar explicitamente a aba inteira
+        RANGE_NAME = "'Planilha Completa - Grupo'!A1:ZZ10000" 
         
-        # Autenticação
+        if not os.path.exists(SERVICE_ACCOUNT_FILE):
+            print(f"❌ Erro: {SERVICE_ACCOUNT_FILE} não existe.")
+            return
+
         creds = service_account.Credentials.from_service_account_file(
             SERVICE_ACCOUNT_FILE, scopes=SCOPES
         )
         service = build('sheets', 'v4', credentials=creds)
         
-        # Chamada à API para obter os valores
         sheet = service.spreadsheets()
-        result = sheet.values().get(
-            spreadsheetId=SPREADSHEET_ID, 
-            range=RANGE_NAME
-        ).execute()
-        
+        result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range=RANGE_NAME).execute()
         values = result.get('values', [])
         
-        if not values:
-            print("Aviso: A planilha está vazia ou a aba não foi encontrada.")
+        if not values or len(values) < 2:
+            print("⚠️ Aviso: API retornou lista vazia ou sem dados além do cabeçalho.")
+            df_global = pd.DataFrame()
             return
 
-        # Transformação em DataFrame
-        headers = values[0] # Primeira linha como cabeçalho
-        data = values[1:]   # Resto como dados
+        headers = values[0]
+        data = values[1:]
         
-        # Normalização do tamanho das linhas (evita erros se houver células vazias no fim)
+        # Filtra linhas completamente vazias (que vêm como listas vazias da API)
+        data = [r for r in data if any(r)]
+        
+        if not data:
+            print("⚠️ Todas as linhas além do cabeçalho estão vazias.")
+            df_global = pd.DataFrame()
+            return
+
         data_padded = [row + [''] * (len(headers) - len(row)) for row in data]
         
         df = pd.DataFrame(data_padded, columns=headers)
         df.columns = df.columns.str.strip()
         
-        # --- Limpeza de Dados ---
+        # Processamento financeiro
+        for col in df.columns:
+            if any(k in col.lower() for k in ['valor', 'causa', 'atualizado', 'garantia']):
+                df[col] = df[col].apply(limpar_valor_monetario)
         
-        # 1. Colunas Financeiras
-        cols_financeiras = [
-            col for col in df.columns 
-            if 'valor' in col.lower() or 'garantia' in col.lower() or 'condenação' in col.lower()
-        ]
-        for col in cols_financeiras:
-            df[col] = df[col].apply(limpar_valor_monetario)
-        
-        # 2. Formatação de Datas (ISO para o JS entender)
-        if "Data de Distribuição" in df.columns:
-            df["Data de Distribuição"] = pd.to_datetime(
-                df["Data de Distribuição"], errors='coerce'
-            ).dt.strftime('%Y-%m-%d').fillna("")
-            
-        # 3. Formatação de Anos
-        for col_ano in ["Ano Distribuição", "Anos Distribuição"]:
-            if col_ano in df.columns:
-                 df[col_ano] = pd.to_numeric(df[col_ano], errors='coerce').fillna(0).astype(int).astype(str)
-                 df[col_ano] = df[col_ano].replace('0', '')
-
-        # 4. Strings Limpas
         df = df.replace([np.inf, -np.inf], np.nan).fillna("")
-        
         df_global = df
-        print(f"✅ Sucesso: {len(df_global)} processos carregados da Nuvem!")
+        print(f"✅ Sucesso: {len(df_global)} processos reais carregados!")
         
     except Exception as e:
-        print(f"❌ Erro na carga de dados: {e}")
+        print(f"❌ Erro fatal: {e}")
 
 @app.on_event("startup")
 def startup_event():
-    """ Executado quando o servidor inicia """
     load_data()
 
 @app.get("/")
-def health_check():
-    """ Rota simples para verificar se o servidor está online """
-    return {"status": "online", "processos_carregados": len(df_global)}
+def health():
+    return {"status": "active", "processes": len(df_global)}
 
 @app.get("/api/dashboard")
 def get_all_data():
-    """ Endpoint que o index.html consome """
+    # Retorna sempre os dados atuais ou tenta recarregar se estiver vazio
     if df_global.empty:
-        # Se os dados falharem, tenta recarregar antes de responder
         load_data()
-    
-    registros = df_global.to_dict(orient="records")
-    return {"processos": registros}
+    return {"processos": df_global.to_dict(orient="records")}
 
 if __name__ == "__main__":
-    # Porta configurada para o Render ou porta 8000 local
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
