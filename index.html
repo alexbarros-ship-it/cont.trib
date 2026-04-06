@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GoGroup | Legal BI - Contencioso</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Plugin DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
@@ -39,6 +43,7 @@
 
     <div class="flex h-screen overflow-hidden">
         
+        <!-- SIDEBAR -->
         <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30 shadow-xl border-r border-slate-800">
             <div class="mb-10 flex justify-between items-center">
                 <h1 class="text-2xl font-bold tracking-tight text-blue-400">BI <span class="text-white font-light text-sm italic opacity-80">Jurídico</span></h1>
@@ -324,13 +329,13 @@
         // --- INICIALIZAÇÃO ---
         function initHeaderTabela() {
             document.getElementById('bigTableHeader').innerHTML = colunasBase.map(c => 
-                `<th onclick=\"ordenarTabela('${c}')\" class=\"px-4 py-3.5 border-r border-slate-800 hover:bg-slate-800 transition cursor-pointer\">${c} <i class=\"fas fa-sort ml-1 opacity-30\"></i></th>`
+                `<th onclick="ordenarTabela('${c}')" class="px-4 py-3.5 border-r border-slate-800 hover:bg-slate-800 transition cursor-pointer">${c} <i class="fas fa-sort ml-1 opacity-30"></i></th>`
             ).join('');
         }
 
         function initFiltrosBasicos() {
             const mats = [...new Set(DADOS_ORIGINAIS.map(p => getValue(p, 'Matéria')))].filter(m=>m).sort();
-            document.getElementById('filterMateriaSidebar').innerHTML = '<option value=\"\">Todas as Matérias</option>' + mats.map(m => `<option value=\"${m}\">${m}</option>`).join('');
+            document.getElementById('filterMateriaSidebar').innerHTML = '<option value="">Todas as Matérias</option>' + mats.map(m => `<option value="${m}">${m}</option>`).join('');
 
             const anos = [...new Set(DADOS_ORIGINAIS.map(p => {
                 let a = getValue(p, 'Ano Distribuição');
@@ -344,7 +349,7 @@
             let yHtml = '';
             anos.forEach((a, i) => {
                 const check = i < 2 ? 'checked' : '';
-                yHtml += `<label class=\"flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors\"><input type=\"checkbox\" value=\"${a}\" class=\"filter-year mr-3 accent-blue-500\" onchange=\"atualizarDashboard()\" ${check}>${a}</label>`;
+                yHtml += `<label class="flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors"><input type="checkbox" value="${a}" class="filter-year mr-3 accent-blue-500" onchange="atualizarDashboard()" ${check}>${a}</label>`;
             });
             document.getElementById('yearDropdown').innerHTML = yHtml;
         }
@@ -485,19 +490,19 @@
         // --- RANKINGS E TABELAS ---
         function renderizarRankings(dados) {
             document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>getFloat(b,'Valor da causa')-getFloat(a,'Valor da causa')).slice(0,5).map((p,i)=>
-                `<li class=\"flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500\"><span class=\"font-bold text-blue-500\">#${i+1}</span><div class=\"flex-1 truncate text-[10px] font-bold\">${getValue(p, 'Número único') || 'N/A'}</div><span class=\"font-black text-slate-800\">R$ ${getFloat(p,'Valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
+                `<li class="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500"><span class="font-bold text-blue-500">#${i+1}</span><div class="flex-1 truncate text-[10px] font-bold">${getValue(p, 'Número único') || 'N/A'}</div><span class="font-black text-slate-800">R$ ${getFloat(p,'Valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
             ).join('');
             
             const ufM = dados.reduce((a,p)=>{ const u=getValue(p, 'UF')||'N/I'; a[u]=(a[u]||0)+getFloat(p,'Valor da causa'); return a; }, {});
             const sortedUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
             const maxUF = sortedUF.length ? sortedUF[0][1] : 1;
             document.getElementById('top-uf').innerHTML = sortedUF.map(([u,v])=>
-                `<div onclick=\"setFiltroDinamico('uf','${u}')\" class=\"p-2 rounded-lg clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100 border border-blue-200':'bg-white'}\"><div class=\"flex justify-between font-bold mb-1\"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class=\"w-full bg-slate-100 h-1.5 rounded-full\"><div class=\"bg-blue-500 h-full rounded-full\" style=\"width:${(v/maxUF*100)}%\"></div></div></div>`
+                `<div onclick="setFiltroDinamico('uf','${u}')" class="p-2 rounded-lg clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100 border border-blue-200':'bg-white'}"><div class="flex justify-between font-bold mb-1"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class="w-full bg-slate-100 h-1.5 rounded-full"><div class="bg-blue-500 h-full rounded-full" style="width:${(v/maxUF*100)}%"></div></div></div>`
             ).join('');
 
             const escM = dados.reduce((a,p)=>{ const e=getValue(p, 'Escritório')||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'Valor da causa'); return a; }, {});
             document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i])=>
-                `<div onclick=\"setFiltroDinamico('escritorio','${e}')\" class=\"p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}\"><div class=\"flex justify-between font-bold text-[10px] mb-1\"><span>${e}</span><span class=\"text-blue-600\">${i.q}</span></div><div class=\"text-[9px] text-slate-500\">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
+                `<div onclick="setFiltroDinamico('escritorio','${e}')" class="p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}"><div class="flex justify-between font-bold text-[10px] mb-1"><span>${e}</span><span class="text-blue-600">${i.q}</span></div><div class="text-[9px] text-slate-500">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
             ).join('');
         }
 
@@ -505,19 +510,19 @@
             const m = dados.reduce((a,p)=>{ const mat=getValue(p, 'Matéria')||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p, 'Valor da causa'); a[mat].va+=getFloat(p, 'Valor Atualizado'); return a; },{});
             const t = dados.length || 1;
             document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc-a[1].vc).map(([mat,i])=>
-                `<tr class=\"hover:bg-slate-50 transition-colors\"><td class=\"px-5 py-3 font-bold text-slate-700\">${mat}</td><td class=\"px-5 py-3 text-center\">${i.q}</td><td class=\"px-5 py-3 text-right font-bold\">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class=\"px-5 py-3 text-right text-green-600 font-bold\">R$ ${i.va.toLocaleString('pt-BR')}</td><td class=\"px-5 py-3 text-center text-slate-400 font-medium\">${((i.q/t)*100).toFixed(1)}%</td></tr>`
+                `<tr class="hover:bg-slate-50 transition-colors"><td class="px-5 py-3 font-bold text-slate-700">${mat}</td><td class="px-5 py-3 text-center">${i.q}</td><td class="px-5 py-3 text-right font-bold">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-right text-green-600 font-bold">R$ ${i.va.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/t)*100).toFixed(1)}%</td></tr>`
             ).join('');
         }
 
         function renderizarTabela(dados) {
             document.getElementById('processTableBody').innerHTML = dados.map(p => 
-                `<tr class=\"hover:bg-slate-50 transition-colors\">${colunasBase.map(c => {
+                `<tr class="hover:bg-slate-50 transition-colors">${colunasBase.map(c => {
                     let v = getValue(p, c) || '-'; 
-                    let cls = \"px-4 py-3 truncate-cell text-slate-600\";
-                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += \" text-right font-semibold text-slate-800\"; }
-                    if(c==='Status') v = `<span class=\"px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider\">${v}</span>`;
-                    if(c==='Número único') cls += \" text-blue-600 font-bold font-mono\";
-                    return `<td class=\"${cls}\" title=\"${String(getValue(p, c)||'-')}\">${v}</td>`;
+                    let cls = "px-4 py-3 truncate-cell text-slate-600";
+                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += " text-right font-semibold text-slate-800"; }
+                    if(c==='Status') v = `<span class="px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider">${v}</span>`;
+                    if(c==='Número único') cls += " text-blue-600 font-bold font-mono";
+                    return `<td class="${cls}" title="${String(getValue(p, c)||'-')}">${v}</td>`;
                 }).join('')}</tr>`
             ).join('');
         }
@@ -528,8 +533,8 @@
         function atualizarBadges() {
             const b = document.getElementById('filterBadges');
             b.innerHTML = ''; let has = false;
-            const add = (l, v) => { if(v){ has=true; b.innerHTML += `<div class=\"text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-500/30 mb-1.5\">${l}: ${v}</div>`; }};
-            add(\"Materia\", filtrosDinamicos.materia); add(\"UF\", filtrosDinamicos.uf); add(\"Escritório\", filtrosDinamicos.escritorio);
+            const add = (l, v) => { if(v){ has=true; b.innerHTML += `<div class="text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-500/30 mb-1.5">${l}: ${v}</div>`; }};
+            add("Materia", filtrosDinamicos.materia); add("UF", filtrosDinamicos.uf); add("Escritório", filtrosDinamicos.escritorio);
             document.getElementById('activeFiltersSection').classList.toggle('hidden', !has);
         }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
