@@ -311,7 +311,13 @@
         Chart.register(ChartDataLabels);
         Chart.defaults.plugins.datalabels.display = false; // Desativa por predefinição globalmente
 
-        const API_URL = "http://127.0.0.1:8000/api/dashboard";
+        // --- CONFIGURAÇÃO DE ACESSO REMOTO ---
+        // 1. Uso local no mesmo PC: deixe "127.0.0.1:8000"
+        // 2. Uso em outro PC na rede (Wi-Fi/Empresa): troque para o IP do computador servidor (ex: "192.168.1.50:8000")
+        // 3. Nuvem: coloque a URL do servidor na nuvem (ex: "https://minha-api.onrender.com")
+        const ENDERECO_SERVIDOR = "127.0.0.1:8000";
+        const API_URL = ENDERECO_SERVIDOR.startsWith('http') ? `${ENDERECO_SERVIDOR}/api/dashboard` : `http://${ENDERECO_SERVIDOR}/api/dashboard`;
+        
         let DADOS_ORIGINAIS = [];
         let chartEvolucao, chartMaterias, chartPizza;
         let ordenacaoAtual = { coluna: '', dir: 1 };
