@@ -1,16 +1,11 @@
-import os
-import uvicorn
-import json
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import traceback
 
-app = FastAPI(title="GoGroup - Diagnóstico de Conexão")
+app = FastAPI(title="API Contencioso GoGroup - Data Engine")
 
+# Habilita a comunicação com o Frontend HTML
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,84 +15,82 @@ app.add_middleware(
 
 df_global = pd.DataFrame()
 
+def limpar_valor_monetario(valor):
+    """ Função inteligente para converter qualquer formato de dinheiro do Excel num número matemático puro """
+    if pd.isna(valor):
+        return 0.0
+    # Se já for um número (inteiro ou decimal), mantém-no
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    
+    # Se for texto (string), remove R$, espaços e trata a pontuação brasileira
+    if isinstance(valor, str):
+        v_str = valor.replace('R$', '').replace(' ', '').strip()
+        if v_str == '' or v_str == '-':
+            return 0.0
+        
+        # Se tiver ponto e vírgula (ex: 1.500.000,00) -> Remove pontos e troca vírgula por ponto
+        if '.' in v_str and ',' in v_str:
+            v_str = v_str.replace('.', '').replace(',', '.')
+        # Se tiver apenas vírgula (ex: 1500,00) -> Troca a vírgula por ponto
+        elif ',' in v_str:
+            v_str = v_str.replace(',', '.')
+        
+        try:
+            return float(v_str)
+        except ValueError:
+            return 0.0
+            
+    return 0.0
+
 def load_data():
     global df_global
+    caminho_arquivo = r"H:\Meu Drive\Contencioso_Tributario\Contencioso_GoGroup.xlsx"
+    
     try:
-        print("--- INICIANDO DIAGNÓSTICO DE CONEXÃO ---")
-        SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-        # No Render, o ficheiro secreto fica na raiz ou caminho definido
-        SERVICE_ACCOUNT_FILE = 'credenciais.json' 
-        SPREADSHEET_ID = '1ekyHYNG_tRp8Ar6iZjtqjM3RgX4jAc2H'
+        # Lê o Excel e remove espaços vazios acidentais nos cabeçalhos
+        df = pd.read_excel(caminho_arquivo)
+        df.columns = df.columns.str.strip()
         
-        if not os.path.exists(SERVICE_ACCOUNT_FILE):
-            print(f"❌ ERRO: O ficheiro {SERVICE_ACCOUNT_FILE} não foi encontrado no servidor Render.")
-            return
+        # 1. TRATAMENTO FINANCEIRO INTELIGENTE
+        # Identifica automaticamente qualquer coluna que remeta a valores
+        cols_financeiras = [col for col in df.columns if 'valor' in col.lower() or 'garantia' in col.lower() or 'condenação' in col.lower()]
+        
+        for col in cols_financeiras:
+            df[col] = df[col].apply(limpar_valor_monetario)
+        
+        # 2. TRATAMENTO DE DATAS E ANOS
+        if "Data de Distribuição" in df.columns:
+            df["Data de Distribuição"] = pd.to_datetime(df["Data de Distribuição"], errors='coerce').dt.strftime('%Y-%m-%d').fillna("")
+            
+        for col_ano in ["Ano Distribuição", "Anos Distribuição"]:
+            if col_ano in df.columns:
+                 df[col_ano] = pd.to_numeric(df[col_ano], errors='coerce').fillna(0).astype(int).astype(str)
+                 df[col_ano] = df[col_ano].replace('0', '')
 
-        with open(SERVICE_ACCOUNT_FILE, 'r') as f:
-            creds_info = json.load(f)
-        
-        # Correção de quebras de linha na chave privada
-        if "\\n" in creds_info.get('private_key', ''):
-            creds_info['private_key'] = creds_info['private_key'].replace("\\n", "\n")
+        # 3. GARANTIA DE TEXTO NAS CLASSIFICAÇÕES
+        # Evita que campos vazios de texto originem erros de 'NaN' na filtragem do JavaScript
+        cols_texto = ["Risk Assessment (probabilidade de PERDA)", "Status", "Matéria", "UF"]
+        for col in cols_texto:
+            if col in df.columns:
+                df[col] = df[col].astype(str).replace('nan', '')
 
-        creds = service_account.Credentials.from_service_account_info(creds_info, scopes=SCOPES)
-        service = build('sheets', 'v4', credentials=creds)
+        # 4. LIMPEZA EXTREMA GERAL
+        df = df.replace([np.inf, -np.inf], np.nan)
+        df = df.fillna("")
         
-        # TESTE 1: Tentar ler metadados da planilha (Verifica se o e-mail tem acesso)
-        sheet_metadata = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()
-        sheets = sheet_metadata.get('sheets', '')
-        titles = [s['properties']['title'] for s in sheets]
-        print(f"✅ CONEXÃO ESTABELECIDA! Abas encontradas: {titles}")
-        
-        target_sheet = 'Planilha Completa - Grupo'
-        
-        if target_sheet not in titles:
-            print(f"❌ ERRO: A aba '{target_sheet}' não foi listada pelo Google. Verifique o nome exato.")
-            return
-
-        # TESTE 2: Tentar ler os valores
-        result = service.spreadsheets().values().get(
-            spreadsheetId=SPREADSHEET_ID, 
-            range=f"'{target_sheet}'!A1:ZZ10000"
-        ).execute()
-        
-        values = result.get('values', [])
-        print(f"📊 Linhas brutas encontradas: {len(values)}")
-
-        if not values:
-            df_global = pd.DataFrame()
-            return
-
-        # Processamento simplificado para garantir carga
-        header = values[0]
-        data = values[1:]
-        df = pd.DataFrame(data, columns=header[:len(data[0])]) if data else pd.DataFrame()
-        
-        # Limpeza básica de colunas financeiras (exemplo)
-        for col in df.columns:
-            if 'Valor' in col:
-                df[col] = df[col].apply(lambda x: str(x).replace('R$', '').replace('.', '').replace(',', '.').strip())
-                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-
         df_global = df
-        print(f"✅ DADOS CARREGADOS: {len(df_global)} processos na memória.")
-
+        print(f"✅ Servidor Pronto: {len(df_global)} processos carregados e tratados sem erros matemáticos.")
+        
     except Exception as e:
-        print("❌ FALHA NO DIAGNÓSTICO:")
-        traceback.print_exc()
+        print(f"❌ Erro crítico ao ler o Excel: {e}")
 
 @app.on_event("startup")
 def startup_event():
     load_data()
 
-@app.get("/")
-def health():
-    return {"status": "online", "rows": len(df_global), "sheet_id": "1ekyHYNG_tRp8Ar6iZjtqjM3RgX4jAc2H"}
-
 @app.get("/api/dashboard")
-def get_data():
-    return {"processos": df_global.to_dict(orient="records")}
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+def get_all_data():
+    # Envia os dados encapsulados para o Frontend processar
+    registros = df_global.to_dict(orient="records")
+    return {"processos": registros}
