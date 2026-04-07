@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoGroup | BI Jurídico - Dashboard Completo</title>
-    <!-- Tailwind CSS -->
+    <title>GoGroup | BI Jurídico - Dashboard Estratégico</title>
+    <!-- Tailwind CSS para Estilização Moderna -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
+    <!-- Chart.js para Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Chart.js Plugin DataLabels -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-    <!-- FontAwesome -->
+    <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- PptxGenJS -->
+    <!-- PptxGenJS para Exportação de Apresentações -->
     <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/dist/pptxgen.bundle.js"></script>
     
     <style>
@@ -20,9 +20,11 @@
         .card-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
         .table-container { max-height: 500px; overflow-y: auto; overflow-x: auto; }
         thead th { position: sticky; top: 0; z-index: 20; background-color: #0f172a !important; cursor: pointer; white-space: nowrap; }
-        .chart-container { position: relative; height: 300px; width: 100%; }
+        .chart-container { position: relative; height: 320px; width: 100%; }
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         .dropdown-content { display: none; position: absolute; background-color: #0f172a; min-width: 100%; z-index: 50; border: 1px solid #334155; border-radius: 0.75rem; max-height: 220px; overflow-y: auto; margin-top: 6px; }
         .dropdown-content.show { display: block; }
         #sidebar { transition: margin-left 0.3s ease-in-out; }
@@ -37,7 +39,7 @@
 
     <div class="flex h-screen overflow-hidden">
         
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR DE FILTROS -->
         <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30 shadow-xl border-r border-slate-800">
             <div class="mb-10 flex justify-between items-center">
                 <h1 class="text-2xl font-bold tracking-tight text-blue-400">GoGroup <span class="text-white font-light text-sm italic opacity-80">BI Jurídico</span></h1>
@@ -64,6 +66,7 @@
                             <option value="">Todos os Riscos</option>
                             <option value="Provável">Provável</option>
                             <option value="Possível">Possível</option>
+                            <option value="Remota">Remota</option>
                         </select>
                     </div>
                 </div>
@@ -81,16 +84,16 @@
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT -->
+        <!-- CONTEÚDO PRINCIPAL -->
         <main class="flex-1 overflow-y-auto p-8 relative z-10" onclick="closeDropdowns(event)">
             
-            <!-- ALERTA DE CONEXÃO -->
-            <div id="api-error-alert" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-5 rounded-2xl shadow-sm flex items-start gap-4">
-                <div class="bg-amber-100 p-2 rounded-full"><i class="fas fa-info-circle text-amber-600"></i></div>
+            <!-- ALERTA DE SINCRONIZAÇÃO -->
+            <div id="sync-alert" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-5 rounded-2xl shadow-sm flex items-start gap-4">
+                <div class="bg-amber-100 p-2 rounded-full"><i class="fas fa-sync text-amber-600"></i></div>
                 <div class="flex-1">
-                    <h3 class="font-bold text-sm">A carregar dados...</h3>
-                    <p class="text-xs mt-1 leading-relaxed" id="api-error-text">
-                        A API do Render está em repouso. Estamos a tentar o acesso direto à planilha para não haver espera.
+                    <h3 class="font-bold text-sm text-amber-900">A carregar dados...</h3>
+                    <p class="text-xs mt-1 leading-relaxed">
+                        A API do Render pode estar em repouso. Estamos a tentar aceder diretamente à planilha para evitar espera.
                     </p>
                 </div>
             </div>
@@ -100,7 +103,7 @@
                     <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-slate-50 border px-3 py-2 rounded-lg text-slate-500"><i class="fas fa-bars"></i></button>
                     <div>
                         <h2 class="text-2xl font-black text-slate-800 tracking-tight">Painel BI Estratégico</h2>
-                        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Contencioso Integrado</p>
+                        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Gestão Integrada de Dados Jurídicos</p>
                     </div>
                 </div>
                 <div class="flex gap-4">
@@ -113,10 +116,10 @@
                 </div>
             </header>
 
-            <!-- KPIs -->
+            <!-- KPIs SUPERIORES -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white p-6 rounded-2xl card-shadow border-l-4 border-l-blue-500">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Exposição Total</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Exposição Total (Causa)</p>
                     <h3 id="kpi-total" class="text-2xl font-black text-slate-800">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-6 rounded-2xl card-shadow border-l-4 border-l-green-500">
@@ -128,24 +131,24 @@
                     <h3 id="kpi-provavel" class="text-2xl font-black text-slate-800">R$ 0,00</h3>
                 </div>
                 <div class="bg-white p-6 rounded-2xl card-shadow border-l-4 border-l-slate-400">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Total Processos</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Volume de Processos</p>
                     <h3 id="kpi-count" class="text-2xl font-black text-slate-800">0</h3>
                 </div>
             </div>
 
-            <!-- COMPARATIVO -->
+            <!-- QUADRO COMPARATIVO -->
             <div class="bg-white p-8 rounded-2xl card-shadow mb-8 border border-blue-50 bg-gradient-to-br from-white to-blue-50/30">
                 <h4 class="font-bold text-slate-800 mb-6 flex items-center gap-2 text-sm italic">
-                    <i class="fas fa-balance-scale text-blue-500"></i> Comparativo de Período
+                    <i class="fas fa-balance-scale text-blue-500"></i> Métricas Comparativas
                 </h4>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div class="flex flex-col border-r border-slate-100 pr-2">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Vol. Entradas</span>
-                        <div class="flex items-end gap-2"><span id="compare-vol-val" class="text-3xl font-black text-slate-800 tracking-tighter">0</span><span id="compare-vol-perc" class="text-xs font-bold pb-1 text-slate-400">0,0%</span></div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Volume Total</span>
+                        <div class="flex items-end gap-2"><span id="compare-vol-val" class="text-3xl font-black text-slate-800 tracking-tighter">0</span><span id="compare-vol-perc" class="text-xs font-bold pb-1 text-slate-400">0%</span></div>
                     </div>
                     <div class="flex flex-col border-r border-slate-100 pr-2">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Causa Acumulada</span>
-                        <div class="flex items-end gap-2"><span id="compare-fin-val" class="text-3xl font-black text-slate-800 tracking-tighter">R$ 0</span><span id="compare-fin-perc" class="text-xs font-bold pb-1 text-slate-400">0,0%</span></div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Impacto Financeiro</span>
+                        <div class="flex items-end gap-2"><span id="compare-fin-val" class="text-3xl font-black text-slate-800 tracking-tighter">R$ 0</span><span id="compare-fin-perc" class="text-xs font-bold pb-1 text-slate-400">0%</span></div>
                     </div>
                     <div class="flex flex-col">
                         <span class="text-[10px] text-gray-400 font-bold uppercase mb-2 tracking-widest">Taxa de Risco Provável</span>
@@ -154,48 +157,48 @@
                 </div>
             </div>
 
-            <!-- LINHA 1 DE GRÁFICOS (Evolução e Pizza) -->
+            <!-- PRIMEIRA LINHA DE GRÁFICOS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div class="bg-white p-6 rounded-2xl card-shadow lg:col-span-2">
-                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Evolução Financeira Temporal</h4>
+                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Evolução Financeira por Ano de Distribuição</h4>
                     <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                 </div>
                 <div class="bg-white p-6 rounded-2xl card-shadow lg:col-span-1">
-                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Distribuição de Matérias (%)</h4>
+                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Distribuição por Matéria (%)</h4>
                     <div class="chart-container"><canvas id="chartPizza"></canvas></div>
                 </div>
             </div>
 
-            <!-- LINHA 2 DE RANKINGS -->
+            <!-- SEGUNDA LINHA DE GRÁFICOS E RANKINGS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <div class="bg-white p-6 rounded-2xl card-shadow">
-                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Volume por Matéria</h4>
+                    <h4 class="font-bold text-slate-800 mb-6 text-sm italic">Volume Numérico por Matéria</h4>
                     <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col">
-                    <h4 class="font-bold text-slate-800 mb-4 border-b pb-2 text-sm italic">Exposição por UF</h4>
+                <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col h-[400px]">
+                    <h4 class="font-bold text-slate-800 mb-4 border-b pb-2 text-sm italic text-gray-500">Exposição Financeira por UF</h4>
                     <div id="top-uf" class="flex-1 space-y-3 text-xs text-slate-600 overflow-y-auto custom-scroll pr-2"></div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col">
-                    <h4 class="font-bold text-slate-800 mb-4 border-b pb-2 text-sm italic">Escritórios e Volume</h4>
+                <div class="bg-white p-6 rounded-2xl card-shadow flex flex-col h-[400px]">
+                    <h4 class="font-bold text-slate-800 mb-4 border-b pb-2 text-sm italic text-gray-500">Ranking de Escritórios</h4>
                     <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto custom-scroll pr-2"></div>
                 </div>
             </div>
 
-            <!-- TABELA RESUMO POR MATÉRIA -->
+            <!-- TABELA DE RESUMO POR MATÉRIA -->
             <div class="bg-white rounded-2xl card-shadow overflow-hidden mb-8 border border-slate-100">
                 <div class="p-5 border-b border-slate-100 bg-white">
-                    <h4 class="font-bold text-slate-800">Resumo Detalhado por Matéria</h4>
+                    <h4 class="font-bold text-slate-800">Resumo por Matéria</h4>
                 </div>
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse">
                         <thead class="text-slate-300 text-[10px] uppercase bg-slate-900">
                             <tr>
                                 <th class="px-5 py-3.5">Matéria</th>
-                                <th class="px-5 py-3.5 text-center">Qtd</th>
+                                <th class="px-5 py-3.5 text-center">Processos</th>
                                 <th class="px-5 py-3.5 text-right">Vlr. Causa</th>
                                 <th class="px-5 py-3.5 text-right">Vlr. Atualizado</th>
-                                <th class="px-5 py-3.5 text-center">% Vol</th>
+                                <th class="px-5 py-3.5 text-center">% Vol.</th>
                             </tr>
                         </thead>
                         <tbody id="summaryMateriaBody" class="text-[11px] divide-y divide-slate-100 bg-white"></tbody>
@@ -203,10 +206,10 @@
                 </div>
             </div>
 
-            <!-- BASE CONSOLIDADA -->
+            <!-- BASE CONSOLIDADA (24 COLUNAS) -->
             <div class="bg-white rounded-2xl card-shadow overflow-hidden mb-8 border border-slate-100">
                 <div class="p-5 bg-slate-900 text-white font-bold flex justify-between items-center text-sm">
-                    Base Consolidada de Dados <span id="table-count" class="text-blue-400"></span>
+                    Base Consolidada de Processos <span id="table-count" class="text-blue-400 text-xs"></span>
                 </div>
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse">
@@ -221,13 +224,14 @@
     </div>
 
     <script>
+        // Configurações Globais
         const API_URL = "https://gogroup-api.onrender.com/api/dashboard"; 
-        const FALLBACK_CSV_URL = "https://docs.google.com/spreadsheets/d/1yMaNNFgxFJPO7U4I9th92dhM3Z3K5qIDWeqlrfh8LAM/export?format=csv&gid=1851867780";
+        const GOOGLE_CSV_URL = "https://docs.google.com/spreadsheets/d/1yMaNNFgxFJPO7U4I9th92dhM3Z3K5qIDWeqlrfh8LAM/export?format=csv&gid=1851867780";
         
-        let DADOS = [];
+        let DADOS_ORIGINAIS = [];
         let chartEvol, chartPizza, chartMaterias;
 
-        const colunasBase = [
+        const colunasDashboard = [
             'Status','Polo','Número único','Data de Distribuição','Segmento','Ano Distribuição','Tipo de ação',
             'EMPRESA DO GRUPO','Polo Ativo - Nome','Polo Passivo - Nome','Escritório Responsável pela Demanda',
             'Matéria','Objeto','Assunto Principal do Processo','Valor da causa','Valor Atualizado','Valor em Garantia',
@@ -235,98 +239,94 @@
             'Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'
         ];
 
+        // --- CARGA DE DADOS COM REDUNDÂNCIA ---
         async function carregarDadosAPI() {
             const btn = document.getElementById('updateBtn');
-            const alert = document.getElementById('api-error-alert');
-            const alertText = document.getElementById('api-error-text');
+            const alert = document.getElementById('sync-alert');
             
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> A carregar...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
             btn.classList.add('btn-loading');
             alert.classList.add('hidden');
             
             try {
-                // Tenta primeiro o Render
+                // Tentativa 1: API no Render (Timeout de 6s para cold start)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000); // 6 segundos de timeout para o Render
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
 
                 const res = await fetch(API_URL, { signal: controller.signal });
                 clearTimeout(timeoutId);
 
-                if (!res.ok) throw new Error("API falhou");
+                if (!res.ok) throw new Error("API Offline ou Lenta");
 
                 const json = await res.json();
-                DADOS = json.processos || [];
+                DADOS_ORIGINAIS = json.processos || [];
                 
-                processarDadosEAtualizar();
+                if (DADOS_ORIGINAIS.length === 0) throw new Error("Base Vazia");
+                renderizarInterface();
             } catch (e) {
-                console.warn("API Render falhou ou demorou. Tentando acesso direto ao Google Sheets...");
+                console.warn("Render falhou. Acionando leitura direta do Google Sheets...");
                 alert.classList.remove('hidden');
-                alertText.innerHTML = "A API do Render está demorada. A carregar dados diretamente do Google Sheets para evitar espera...";
-                
-                await carregarDadosDiretosCSV();
+                await carregarPlanilhaDireta();
             } finally {
                 btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar';
                 btn.classList.remove('btn-loading');
             }
         }
 
-        async function carregarDadosDiretosCSV() {
+        async function carregarPlanilhaDireta() {
             try {
-                const res = await fetch(FALLBACK_CSV_URL);
-                if (!res.ok) throw new Error("Planilha do Google inacessível");
+                const res = await fetch(GOOGLE_CSV_URL);
+                if (!res.ok) throw new Error("Planilha inacessível");
                 
                 const text = await res.text();
-                DADOS = parseCSV(text);
+                DADOS_ORIGINAIS = parseCSVManual(text);
+                renderizarInterface();
                 
-                processarDadosEAtualizar();
-                
-                // Oculta o alerta após sucesso no fallback se quiser, ou mantém para info.
-                setTimeout(() => document.getElementById('api-error-alert').classList.add('hidden'), 3000);
+                setTimeout(() => document.getElementById('sync-alert').classList.add('hidden'), 4000);
             } catch (e) {
-                console.error("Erro crítico: Todas as fontes de dados falharam.", e);
-                document.getElementById('api-error-text').innerHTML = "Erro: Não foi possível carregar os dados de nenhuma fonte. Verifique a sua ligação à internet.";
+                console.error("Falha crítica ao carregar dados:", e);
+                document.getElementById('sync-alert').innerHTML = "<strong>Erro Crítico:</strong> Não foi possível carregar os dados. Verifique a sua internet.";
             }
         }
 
-        function parseCSV(csvText) {
+        // --- PROCESSAMENTO DE DADOS ---
+        function parseCSVManual(csvText) {
             const lines = csvText.split(/\r?\n/);
             if (lines.length < 2) return [];
             
-            // Parser simples para CSV do Google
             const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-            const dataRows = lines.slice(1);
+            const rows = lines.slice(1);
             
-            return dataRows.map(row => {
-                // Regex para lidar com vírgulas dentro de aspas
+            return rows.map(row => {
+                // Regex para capturar campos CSV lidando com vírgulas internas entre aspas
                 const values = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
                 const obj = {};
-                headers.forEach((header, index) => {
-                    let val = (values[index] || "").trim().replace(/^"|"$/g, '');
-                    
-                    // Limpeza de valores monetários se necessário
+                headers.forEach((header, i) => {
+                    let val = (values[i] || "").trim().replace(/^"|"$/g, '');
+                    // Limpeza numérica para campos financeiros
                     if (header.toLowerCase().includes('valor')) {
                         val = val.replace('R$', '').replace(/\s/g, '').replace('.', '').replace(',', '.');
                     }
                     obj[header] = val;
                 });
                 return obj;
-            }).filter(obj => Object.keys(obj).length > 0 && (obj['Número único'] || obj['Matéria']));
+            }).filter(p => p['Número único'] || p['Matéria']);
         }
 
-        function processarDadosEAtualizar() {
-            if (DADOS.length > 0) {
+        function renderizarInterface() {
+            if (DADOS_ORIGINAIS.length > 0) {
                 initFiltros();
-                initHeader();
+                initHeaderTabela();
                 atualizarDashboard();
             }
         }
 
-        function initHeader() {
-            document.getElementById('tableHeader').innerHTML = `<tr>${colunasBase.map(c => `<th class="px-4 py-3">${c}</th>`).join('')}</tr>`;
+        function initHeaderTabela() {
+            document.getElementById('tableHeader').innerHTML = `<tr>${colunasDashboard.map(c => `<th class="px-4 py-3">${c}</th>`).join('')}</tr>`;
         }
 
         function initFiltros() {
-            const anos = [...new Set(DADOS.map(p => p['Ano Distribuição']))].filter(a => a).sort((a,b) => b-a);
+            const anos = [...new Set(DADOS_ORIGINAIS.map(p => String(p['Ano Distribuição'] || "")))].filter(a => a && a !== "0").sort((a,b) => b-a);
             let html = '<label class="flex items-center p-2 text-xs font-bold border-b border-slate-700 mb-1"><input type="checkbox" checked onchange="toggleAllAnos(this.checked)" class="mr-3 accent-blue-500">Selecionar Todos</label>';
             anos.forEach(a => {
                 html += `<label class="flex items-center p-2 text-slate-300 text-xs hover:bg-slate-800 transition cursor-pointer">
@@ -336,19 +336,20 @@
             document.getElementById('yearDropdown').innerHTML = html;
         }
 
+        // --- ATUALIZAÇÃO DO DASHBOARD ---
         function atualizarDashboard() {
             const busca = (document.getElementById('sidebarSearch').value || "").toLowerCase();
             const status = document.getElementById('filterStatus').value;
             const risco = document.getElementById('filterRisco').value;
             const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(e => String(e.value));
 
-            const filtrados = DADOS.filter(p => {
-                const matchBusca = !busca || JSON.stringify(p).toLowerCase().includes(busca);
-                const matchStatus = !status || p['Status'] === status;
-                const matchRisco = !risco || String(p['Risk Assessment (probabilidade de PERDA)']).includes(risco);
+            const filtrados = DADOS_ORIGINAIS.filter(p => {
+                const bMatch = !busca || JSON.stringify(p).toLowerCase().includes(busca);
+                const sMatch = !status || p['Status'] === status;
+                const rMatch = !risco || String(p['Risk Assessment (probabilidade de PERDA)']).includes(risco);
                 const aP = String(p['Ano Distribuição'] || "");
-                const matchAno = anosSel.length === 0 || anosSel.includes(aP);
-                return matchBusca && matchStatus && matchRisco && matchAno;
+                const aMatch = anosSel.length === 0 || anosSel.includes(aP);
+                return bMatch && sMatch && rMatch && aMatch;
             });
 
             // KPIs
@@ -363,9 +364,13 @@
             document.getElementById('kpi-count').innerText = filtrados.length;
             document.getElementById('table-count').innerText = `(${filtrados.length} processos)`;
 
+            // Comparativo
             const taxa = filtrados.length ? (qProv.length / filtrados.length) * 100 : 0;
             document.getElementById('compare-risk-val').innerText = taxa.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
             document.getElementById('compare-risk-perc').innerText = `${qProv.length} processos`;
+
+            document.getElementById('compare-vol-val').innerText = filtrados.length;
+            document.getElementById('compare-fin-val').innerText = total.toLocaleString('pt-BR', {notation:'compact', maximumFractionDigits:1});
 
             renderTabela(filtrados);
             renderResumoMateria(filtrados);
@@ -376,15 +381,16 @@
         function renderTabela(dados) {
             document.getElementById('tableBody').innerHTML = dados.map(p => `
                 <tr class="hover:bg-slate-50 transition-colors">
-                    ${colunasBase.map(c => {
+                    ${colunasDashboard.map(c => {
                         let v = p[c] || '-';
-                        let cls = "px-4 py-3 truncate-cell";
+                        let cls = "px-4 py-3 truncate-cell text-slate-600";
                         if (c.toLowerCase().includes('valor')) {
-                            const num = parseFloat(p[c]) || 0;
-                            v = num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-                            cls += " text-right font-bold text-slate-700";
+                            const n = parseFloat(p[c]) || 0;
+                            v = n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                            cls += " text-right font-bold text-slate-800";
                         }
                         if (c === 'Número único') cls += " text-blue-600 font-mono font-bold";
+                        if (c === 'Status') v = `<span class="px-2 py-0.5 rounded-full bg-slate-100 font-bold text-[9px] uppercase tracking-wider">${v}</span>`;
                         return `<td class="${cls}" title="${v}">${v}</td>`;
                     }).join('')}
                 </tr>
@@ -395,34 +401,34 @@
             const m = dados.reduce((a,p) => { 
                 const mat = p['Matéria'] || 'Outras'; 
                 if(!a[mat]) a[mat] = {q:0, vc:0, va:0}; 
-                a[mat].q++; 
-                a[mat].vc += (parseFloat(p['Valor da causa']) || 0); 
-                a[mat].va += (parseFloat(p['Valor Atualizado']) || 0); 
+                a[mat].q++; a[mat].vc += (parseFloat(p['Valor da causa']) || 0); a[mat].va += (parseFloat(p['Valor Atualizado']) || 0); 
                 return a; 
             },{});
-            const t = dados.length || 1;
+            const totalItems = dados.length || 1;
             document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc - a[1].vc).map(([mat,i]) => `
                 <tr class="hover:bg-slate-50 transition-colors">
                     <td class="px-5 py-3 font-bold text-slate-700">${mat}</td>
                     <td class="px-5 py-3 text-center">${i.q}</td>
                     <td class="px-5 py-3 text-right">R$ ${i.vc.toLocaleString('pt-BR')}</td>
                     <td class="px-5 py-3 text-right text-green-600 font-bold">R$ ${i.va.toLocaleString('pt-BR')}</td>
-                    <td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/t)*100).toFixed(1)}%</td>
+                    <td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/totalItems)*100).toFixed(1)}%</td>
                 </tr>
             `).join('');
         }
 
         function renderRankings(dados) {
+            // UF
             const ufM = dados.reduce((a,p)=>{ const u=p['UF']||'N/I'; a[u]=(a[u]||0)+(parseFloat(p['Valor da causa'])||0); return a; }, {});
-            const sortedUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
-            const maxUF = sortedUF.length ? sortedUF[0][1] : 1;
-            document.getElementById('top-uf').innerHTML = sortedUF.map(([u,v]) => `
+            const sUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
+            const maxVal = sUF.length ? sUF[0][1] : 1;
+            document.getElementById('top-uf').innerHTML = sUF.map(([u,v]) => `
                 <div class="p-2 bg-slate-50 rounded-lg">
                     <div class="flex justify-between font-bold mb-1 text-[10px]"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div>
-                    <div class="w-full bg-slate-200 h-1 rounded-full"><div class="bg-blue-500 h-full rounded-full" style="width:${(v/maxUF*100)}%"></div></div>
+                    <div class="w-full bg-slate-200 h-1 rounded-full"><div class="bg-blue-500 h-full rounded-full" style="width:${(v/maxVal*100)}%"></div></div>
                 </div>
             `).join('');
 
+            // Escritórios
             const escM = dados.reduce((a,p)=>{ const e=p['Escritório Responsável pela Demanda']||'Interno'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=(parseFloat(p['Valor da causa'])||0); return a; }, {});
             document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i]) => `
                 <div class="p-3 border border-slate-100 rounded-xl bg-slate-50">
@@ -436,6 +442,7 @@
             const matMap = dados.reduce((acc, p) => { const m = p['Matéria'] || 'N/D'; acc[m] = (acc[m] || 0) + 1; return acc; }, {});
             const sortedMat = Object.entries(matMap).sort((a,b) => b[1] - a[1]).slice(0,8);
             
+            // Pizza
             if(chartPizza) chartPizza.destroy();
             chartPizza = new Chart(document.getElementById('chartPizza'), {
                 type: 'pie',
@@ -443,6 +450,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
             });
 
+            // Barras
             if(chartMaterias) chartMaterias.destroy();
             chartMaterias = new Chart(document.getElementById('chartMaterias'), {
                 type: 'bar',
@@ -450,6 +458,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
+            // Evolução
             const sY = anos.slice(0,2).sort();
             const datasets = sY.map((ano, i) => {
                 const meses = Array.from({length: 12}, (_, m) => {
@@ -472,12 +481,12 @@
             });
         }
 
+        // --- EXPORTAÇÃO E UI ---
         async function exportarPPT() {
             const pptx = new PptxGenJS();
-            pptx.layout = 'LAYOUT_16x9';
             const slide = pptx.addSlide();
             slide.addText("Relatório BI Jurídico - GoGroup", { x: 0.5, y: 0.5, fontSize: 24, bold: true, color: '3b82f6' });
-            pptx.writeFile({ fileName: "Relatorio_GoGroup.pptx" });
+            pptx.writeFile({ fileName: "GoGroup_Dash.pptx" });
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
