@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GoGroup | BI Jurídico - Dashboard Estratégico</title>
+    <title>GoGroup | BI Jurídico - Dashboard Direto</title>
     <!-- Tailwind CSS para Estilização Moderna -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js para Gráficos -->
@@ -87,28 +87,17 @@
         <!-- CONTEÚDO PRINCIPAL -->
         <main class="flex-1 overflow-y-auto p-8 relative z-10" onclick="closeDropdowns(event)">
             
-            <!-- ALERTA DE SINCRONIZAÇÃO -->
-            <div id="sync-alert" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-5 rounded-2xl shadow-sm flex items-start gap-4">
-                <div class="bg-amber-100 p-2 rounded-full"><i class="fas fa-sync text-amber-600"></i></div>
-                <div class="flex-1">
-                    <h3 class="font-bold text-sm text-amber-900">A carregar dados...</h3>
-                    <p class="text-xs mt-1 leading-relaxed">
-                        A API do Render pode estar em repouso. Estamos a tentar aceder diretamente à planilha para evitar espera.
-                    </p>
-                </div>
-            </div>
-
             <header class="flex justify-between items-center mb-8 bg-white p-5 rounded-2xl border border-slate-100 card-shadow">
                 <div class="flex items-center gap-4">
                     <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-slate-50 border px-3 py-2 rounded-lg text-slate-500"><i class="fas fa-bars"></i></button>
                     <div>
                         <h2 class="text-2xl font-black text-slate-800 tracking-tight">Painel BI Estratégico</h2>
-                        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Gestão Integrada de Dados Jurídicos</p>
+                        <p class="text-slate-400 text-[10px] uppercase font-bold tracking-widest">Sincronizado diretamente com a Planilha</p>
                     </div>
                 </div>
                 <div class="flex gap-4">
-                    <button id="updateBtn" onclick="carregarDadosAPI()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-sm flex items-center">
-                        <i class="fas fa-sync-alt mr-2"></i> Atualizar
+                    <button id="updateBtn" onclick="carregarDadosPlanilha()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-sm flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
                     </button>
                     <button onclick="exportarPPT()" class="bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-orange-700 transition shadow-sm flex items-center">
                         <i class="fas fa-file-powerpoint mr-2"></i> PPT
@@ -224,8 +213,7 @@
     </div>
 
     <script>
-        // Configurações Globais
-        const API_URL = "https://gogroup-api.onrender.com/api/dashboard"; 
+        // Configuração Direta da Planilha Pública
         const GOOGLE_CSV_URL = "https://docs.google.com/spreadsheets/d/1yMaNNFgxFJPO7U4I9th92dhM3Z3K5qIDWeqlrfh8LAM/export?format=csv&gid=1851867780";
         
         let DADOS_ORIGINAIS = [];
@@ -239,57 +227,36 @@
             'Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'
         ];
 
-        // --- CARGA DE DADOS COM REDUNDÂNCIA ---
-        async function carregarDadosAPI() {
+        // --- CARREGAMENTO DIRETO ---
+        async function carregarDadosPlanilha() {
             const btn = document.getElementById('updateBtn');
-            const alert = document.getElementById('sync-alert');
             
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Lendo Planilha...';
             btn.classList.add('btn-loading');
-            alert.classList.add('hidden');
             
             try {
-                // Tentativa 1: API no Render (Timeout de 6s para cold start)
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-                const res = await fetch(API_URL, { signal: controller.signal });
-                clearTimeout(timeoutId);
-
-                if (!res.ok) throw new Error("API Offline ou Lenta");
-
-                const json = await res.json();
-                DADOS_ORIGINAIS = json.processos || [];
+                const res = await fetch(GOOGLE_CSV_URL);
+                if (!res.ok) throw new Error("Não foi possível aceder à planilha. Verifique se ela está 'Publicada na Web'.");
                 
-                if (DADOS_ORIGINAIS.length === 0) throw new Error("Base Vazia");
-                renderizarInterface();
+                const text = await res.text();
+                DADOS_ORIGINAIS = parseCSVManual(text);
+                
+                if (DADOS_ORIGINAIS.length > 0) {
+                    renderizarInterface();
+                } else {
+                    console.error("Nenhum dado encontrado no CSV.");
+                }
             } catch (e) {
-                console.warn("Render falhou. Acionando leitura direta do Google Sheets...");
-                alert.classList.remove('hidden');
-                await carregarPlanilhaDireta();
+                console.error("Erro ao carregar dados:", e);
+                // Utilizando um modal ou box customizado em vez de alert seria o ideal, 
+                // aqui apenas logamos para evitar interrupções.
             } finally {
-                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar';
+                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
                 btn.classList.remove('btn-loading');
             }
         }
 
-        async function carregarPlanilhaDireta() {
-            try {
-                const res = await fetch(GOOGLE_CSV_URL);
-                if (!res.ok) throw new Error("Planilha inacessível");
-                
-                const text = await res.text();
-                DADOS_ORIGINAIS = parseCSVManual(text);
-                renderizarInterface();
-                
-                setTimeout(() => document.getElementById('sync-alert').classList.add('hidden'), 4000);
-            } catch (e) {
-                console.error("Falha crítica ao carregar dados:", e);
-                document.getElementById('sync-alert').innerHTML = "<strong>Erro Crítico:</strong> Não foi possível carregar os dados. Verifique a sua internet.";
-            }
-        }
-
-        // --- PROCESSAMENTO DE DADOS ---
+        // --- PROCESSAMENTO DE DADOS CSV ---
         function parseCSVManual(csvText) {
             const lines = csvText.split(/\r?\n/);
             if (lines.length < 2) return [];
@@ -298,12 +265,11 @@
             const rows = lines.slice(1);
             
             return rows.map(row => {
-                // Regex para capturar campos CSV lidando com vírgulas internas entre aspas
                 const values = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
                 const obj = {};
                 headers.forEach((header, i) => {
                     let val = (values[i] || "").trim().replace(/^"|"$/g, '');
-                    // Limpeza numérica para campos financeiros
+                    // Limpeza de campos financeiros para garantir que sejam números para cálculos
                     if (header.toLowerCase().includes('valor')) {
                         val = val.replace('R$', '').replace(/\s/g, '').replace('.', '').replace(',', '.');
                     }
@@ -314,11 +280,9 @@
         }
 
         function renderizarInterface() {
-            if (DADOS_ORIGINAIS.length > 0) {
-                initFiltros();
-                initHeaderTabela();
-                atualizarDashboard();
-            }
+            initFiltros();
+            initHeaderTabela();
+            atualizarDashboard();
         }
 
         function initHeaderTabela() {
@@ -362,7 +326,7 @@
             document.getElementById('kpi-atualizado').innerText = atual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('kpi-provavel').innerText = provValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
             document.getElementById('kpi-count').innerText = filtrados.length;
-            document.getElementById('table-count').innerText = `(${filtrados.length} processos)`;
+            document.getElementById('table-count').innerText = `(${filtrados.length} processos encontrados)`;
 
             // Comparativo
             const taxa = filtrados.length ? (qProv.length / filtrados.length) * 100 : 0;
@@ -417,7 +381,7 @@
         }
 
         function renderRankings(dados) {
-            // UF
+            // Ranking UF
             const ufM = dados.reduce((a,p)=>{ const u=p['UF']||'N/I'; a[u]=(a[u]||0)+(parseFloat(p['Valor da causa'])||0); return a; }, {});
             const sUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
             const maxVal = sUF.length ? sUF[0][1] : 1;
@@ -428,7 +392,7 @@
                 </div>
             `).join('');
 
-            // Escritórios
+            // Ranking Escritórios
             const escM = dados.reduce((a,p)=>{ const e=p['Escritório Responsável pela Demanda']||'Interno'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=(parseFloat(p['Valor da causa'])||0); return a; }, {});
             document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i]) => `
                 <div class="p-3 border border-slate-100 rounded-xl bg-slate-50">
@@ -442,7 +406,7 @@
             const matMap = dados.reduce((acc, p) => { const m = p['Matéria'] || 'N/D'; acc[m] = (acc[m] || 0) + 1; return acc; }, {});
             const sortedMat = Object.entries(matMap).sort((a,b) => b[1] - a[1]).slice(0,8);
             
-            // Pizza
+            // Gráfico Pizza
             if(chartPizza) chartPizza.destroy();
             chartPizza = new Chart(document.getElementById('chartPizza'), {
                 type: 'pie',
@@ -450,7 +414,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 9 } } } } }
             });
 
-            // Barras
+            // Gráfico Barras
             if(chartMaterias) chartMaterias.destroy();
             chartMaterias = new Chart(document.getElementById('chartMaterias'), {
                 type: 'bar',
@@ -458,7 +422,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // Evolução
+            // Gráfico Evolução
             const sY = anos.slice(0,2).sort();
             const datasets = sY.map((ano, i) => {
                 const meses = Array.from({length: 12}, (_, m) => {
@@ -486,7 +450,7 @@
             const pptx = new PptxGenJS();
             const slide = pptx.addSlide();
             slide.addText("Relatório BI Jurídico - GoGroup", { x: 0.5, y: 0.5, fontSize: 24, bold: true, color: '3b82f6' });
-            pptx.writeFile({ fileName: "GoGroup_Dash.pptx" });
+            pptx.writeFile({ fileName: "GoGroup_BI_Report.pptx" });
         }
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
@@ -495,7 +459,7 @@
         function debounceSearch() { atualizarDashboard(); }
         function toggleAllAnos(v) { document.querySelectorAll('.filter-year').forEach(e => e.checked = v); atualizarDashboard(); }
 
-        window.onload = carregarDadosAPI;
+        window.onload = carregarDadosPlanilha;
     </script>
 </body>
 </html>
