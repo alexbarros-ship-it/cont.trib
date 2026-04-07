@@ -8,241 +8,273 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Chart.js Plugin DataLabels -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- PptxGenJS (Para exportar PowerPoint) -->
+    <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS/dist/pptxgen.bundle.js"></script>
     
     <style>
-        .sidebar-gradient { background: linear-gradient(180deg, #0f172a 0%, #020617 100%); }
-        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03); }
-        .table-container { max-height: 500px; overflow-y: auto; overflow-x: auto; }
-        thead th { position: sticky; top: 0; z-index: 20; background-color: #0f172a !important; cursor: pointer; white-space: nowrap; }
-        thead th:hover { background-color: #1e293b !important; }
+        .sidebar-gradient { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+        .card-shadow { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .table-container { max-height: 600px; overflow-y: auto; overflow-x: auto; }
+        thead th { position: sticky; top: 0; z-index: 20; background-color: #1e293b !important; cursor: pointer; white-space: nowrap; }
+        thead th:hover { background-color: #334155 !important; }
         .chart-container { position: relative; height: 300px; width: 100%; }
-        .clickable-item { cursor: pointer; transition: all 0.2s ease-in-out; }
-        .clickable-item:hover { background-color: #f8fafc; transform: translateX(4px); }
+        .clickable-item { cursor: pointer; transition: all 0.2s; }
+        .clickable-item:hover { background-color: #f1f5f9; transform: translateX(4px); }
         .filter-active { border: 2px solid #3b82f6 !important; background-color: #eff6ff !important; }
         
         .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scroll::-webkit-scrollbar-track { background: #f8fafc; }
+        .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         
-        .dropdown-content { display: none; position: absolute; background-color: #0f172a; min-width: 100%; box-shadow: 0px 8px 20px 0px rgba(0,0,0,0.5); z-index: 50; border: 1px solid #334155; border-radius: 0.75rem; max-height: 220px; overflow-y: auto; margin-top: 6px; }
+        .dropdown-content { display: none; position: absolute; background-color: #1e293b; min-width: 100%; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.4); z-index: 50; border: 1px solid #334155; border-radius: 0.5rem; max-height: 200px; overflow-y: auto; margin-top: 4px; }
         .dropdown-content.show { display: block; }
+        .dropdown-content::-webkit-scrollbar { width: 4px; }
+        .dropdown-content::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
         
         #sidebar { transition: margin-left 0.3s ease-in-out, opacity 0.3s ease-in-out; }
         .sidebar-hidden { margin-left: -18rem; opacity: 0; pointer-events: none; }
         .truncate-cell { max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .info-icon { transition: color 0.2s; cursor: help; }
-        .info-icon:hover { color: #3b82f6; }
-        .btn-loading { opacity: 0.7; cursor: not-allowed; pointer-events: none; }
     </style>
 </head>
-<body class="bg-slate-50 font-sans text-slate-800">
+<body class="bg-gray-50 font-sans text-gray-800">
 
     <div class="flex h-screen overflow-hidden">
         
         <!-- SIDEBAR -->
-        <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30 shadow-xl border-r border-slate-800">
+        <aside id="sidebar" class="w-72 sidebar-gradient text-white flex flex-col p-6 shrink-0 relative z-30">
             <div class="mb-10 flex justify-between items-center">
-                <h1 class="text-2xl font-bold tracking-tight text-blue-400">BI <span class="text-white font-light text-sm italic opacity-80">Jurídico</span></h1>
-                <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white transition cursor-pointer">
+                <h1 class="text-2xl font-bold tracking-tight text-blue-400">GoGroup <span class="text-white font-light text-sm italic">BI Jurídico</span></h1>
+                <button onclick="toggleSidebar()" class="text-gray-400 hover:text-white transition cursor-pointer" title="Ocultar Filtros">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
 
             <nav class="flex-1 space-y-6 overflow-y-auto pr-2 custom-scroll">
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Busca Geral</p>
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700/50">
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Busca Geral</p>
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700">
                         <div class="relative">
-                            <i class="fas fa-search absolute left-3 top-3 text-slate-500 text-xs"></i>
-                            <input type="text" id="sidebarSearch" onkeyup="debounceSearch()" placeholder="Pesquisar..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 pl-9 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
+                            <i class="fas fa-search absolute left-3 top-2.5 text-gray-500 text-xs"></i>
+                            <input type="text" id="sidebarSearch" onkeyup="debounceSearch()" placeholder="Nº Processo ou Empresa" class="w-full bg-slate-900 border border-slate-600 rounded p-2 pl-8 text-xs focus:outline-none focus:border-blue-500 transition-colors">
                         </div>
                     </div>
                 </div>
 
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Filtros de Processo</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-4 tracking-widest">Filtros de Processo</p>
                     <div class="space-y-3">
-                        <select id="filterStatus" onchange="atualizarDashboard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 outline-none">
+                        <select id="filterStatus" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
                             <option value="">Todos os Status</option>
                             <option value="Ativo">Ativo</option>
                             <option value="Encerrado">Encerrado</option>
+                            <option value="Suspenso">Suspenso</option>
                         </select>
-                        <select id="filterRisco" onchange="atualizarDashboard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 outline-none">
+                        <select id="filterRisco" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
                             <option value="">Todos os Riscos</option>
                             <option value="Provável">Provável</option>
                             <option value="Possível">Possível</option>
+                            <option value="Remota">Remota</option>
                         </select>
-                        <select id="filterMateriaSidebar" onchange="atualizarDashboard()" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 outline-none">
+                        <select id="filterMateriaSidebar" onchange="atualizarDashboard()" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 outline-none">
                             <option value="">Todas as Matérias</option>
                         </select>
                     </div>
                 </div>
 
                 <div>
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Período de Análise</p>
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-2 tracking-widest">Período de Análise</p>
                     <div class="relative mb-3">
-                        <button onclick="toggleDropdown('yearDropdown')" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs text-slate-300 flex justify-between items-center hover:bg-slate-800 transition-colors">
-                            <span id="yearLabel">Anos Selecionados</span>
-                            <i class="fas fa-chevron-down text-[10px] opacity-70"></i>
+                        <button onclick="toggleDropdown('yearDropdown')" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 flex justify-between items-center hover:bg-slate-700">
+                            <span id="yearLabel">Anos (Múltiplo)</span>
+                            <i class="fas fa-chevron-down text-[10px]"></i>
                         </button>
-                        <div id="yearDropdown" class="dropdown-content custom-scroll"></div>
+                        <div id="yearDropdown" class="dropdown-content"></div>
+                    </div>
+                    <div class="relative">
+                        <button onclick="toggleDropdown('monthDropdown')" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-xs text-gray-300 flex justify-between items-center hover:bg-slate-700">
+                            <span id="monthLabel">Meses (Múltiplo)</span>
+                            <i class="fas fa-chevron-down text-[10px]"></i>
+                        </button>
+                        <div id="monthDropdown" class="dropdown-content"></div>
                     </div>
                 </div>
 
-                <div id="activeFiltersSection" class="hidden pt-5 border-t border-slate-800">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3 tracking-widest">Filtros Ativos</p>
-                    <button onclick="limparFiltrosDinamicos()" class="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-3 py-2 rounded-lg hover:bg-red-500/20 transition-all w-full mb-3 flex justify-center items-center">
-                        Limpar Seleções <i class="fas fa-eraser ml-2"></i>
+                <div id="activeFiltersSection" class="hidden pt-4 border-t border-slate-700">
+                    <p class="text-xs font-semibold text-gray-400 uppercase mb-2 tracking-widest">Filtros Ativos</p>
+                    <button onclick="limparFiltrosDinamicos()" class="text-[10px] bg-red-500/20 text-red-400 px-2 py-1.5 rounded hover:bg-red-500/40 transition w-full mb-2 flex justify-center items-center">
+                        Limpar Seleções <i class="fas fa-times ml-2"></i>
                     </button>
-                    <div id="filterBadges" class="space-y-1.5"></div>
+                    <div id="filterBadges" class="space-y-1"></div>
                 </div>
             </nav>
         </aside>
 
-        <main class="flex-1 overflow-y-auto p-6 md:p-8 custom-scroll relative z-10" onclick="closeDropdowns(event)">
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-y-auto p-8 custom-scroll relative z-10" onclick="closeDropdowns(event)">
             
-            <div id="api-alert" class="hidden mb-6 bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl shadow-sm flex items-start gap-3">
-                <i class="fas fa-exclamation-triangle text-amber-500 mt-1"></i>
-                <div>
-                    <h3 class="font-bold text-sm">Estado do Servidor</h3>
-                    <p class="text-xs mt-1" id="error-text"></p>
-                </div>
+            <!-- ALERTA DE CONEXÃO (Fica oculto a menos que a API falhe) -->
+            <div id="api-alert" class="hidden mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-sm relative">
+                <h3 class="font-bold text-lg"><i class="fas fa-exclamation-triangle mr-2"></i> Falha de Conexão com o Banco de Dados</h3>
+                <p class="text-sm mt-1">O Dashboard não conseguiu carregar os dados do seu Excel. Você está visualizando <strong>dados fictícios de demonstração</strong>.</p>
+                <p class="text-sm mt-1 font-semibold">Verifique se o seu arquivo "iniciar.bat" (tela preta do Python) está aberto e rodando.</p>
             </div>
 
-            <header class="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl border border-slate-100 card-shadow">
+            <header class="flex justify-between items-center mb-8">
                 <div class="flex items-center gap-4">
-                    <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-slate-50 border border-slate-200 text-slate-500 px-3 py-2 rounded-lg hover:bg-slate-100 transition shadow-sm">
+                    <button onclick="toggleSidebar()" id="sidebarToggleBtn" class="hidden bg-white border border-gray-200 text-gray-500 px-3 py-2 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition shadow-sm" title="Mostrar Filtros">
                         <i class="fas fa-bars"></i>
                     </button>
                     <div>
-                        <h2 class="text-2xl font-black text-slate-800 tracking-tight">Painel Jurídico</h2>
-                        <p class="text-slate-400 text-xs font-medium uppercase tracking-widest mt-0.5">Gestão de Contencioso Inteligente</p>
+                        <h2 class="text-2xl font-bold text-slate-900">Jurídico GoGroup</h2>
+                        <p class="text-gray-500 text-sm italic">Dados Integrados e Conectados</p>
                     </div>
                 </div>
-                <button id="updateBtn" onclick="carregarDadosAPI()" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition-all flex items-center">
-                    <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
-                </button>
+                <div class="flex gap-4 items-center">
+                    <button onclick="carregarDadosAPI()" class="bg-white border border-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 shadow-sm">
+                        <i class="fas fa-sync-alt mr-2"></i> Atualizar Dados
+                    </button>
+                    <!-- Botão Exportar PPT -->
+                    <button id="btnExportarPPT" onclick="exportarPPT()" class="bg-orange-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-orange-700 shadow-md flex items-center transition">
+                        <i class="fas fa-file-powerpoint mr-2"></i> Exportar PPT
+                    </button>
+                    <img src="https://s3.amazonaws.com/gupy5/production/companies/41819/emails/1676643247738/e43ea6f0-ae8f-11ed-9f5b-6f83040c5f56.png" alt="GoGroup Logo" class="h-10 object-contain drop-shadow-sm" onerror="this.src='https://via.placeholder.com/120x40?text=GoGroup'">
+                </div>
             </header>
 
+            <!-- KPIs -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 border-l-4 border-l-blue-500 relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-slate-300 info-icon" title="Soma total do valor da causa dos processos filtrados."></i>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1.5 tracking-widest">Exposição Total</p>
-                    <h3 id="kpi-total" class="text-2xl font-black text-slate-800 truncate">R$ 0,00</h3>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-blue-500 relative">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Soma Total da Causa</p>
+                    <h3 id="kpi-total" class="text-2xl font-bold text-slate-800 truncate" title="R$ 0,00">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 border-l-4 border-l-green-500 relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-slate-300 info-icon" title="Soma total do valor atualizado dos processos filtrados."></i>
-                    <p class="text-[10px] text-green-600 font-bold uppercase mb-1.5 tracking-widest">Valor Atualizado</p>
-                    <h3 id="kpi-atualizado" class="text-2xl font-black text-slate-800 truncate">R$ 0,00</h3>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-green-500 relative">
+                    <p class="text-[10px] text-green-600 font-bold uppercase mb-1 tracking-wider">Soma Valor Atualizado</p>
+                    <h3 id="kpi-atualizado" class="text-2xl font-bold text-slate-800 truncate" title="R$ 0,00">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 border-l-4 border-l-red-500 relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-slate-300 info-icon" title="Valor da causa para processos com risco 'Provável'."></i>
-                    <p class="text-[10px] text-red-500 font-bold uppercase mb-1.5 tracking-widest">Cenário Provável</p>
-                    <h3 id="kpi-provavel" class="text-2xl font-black text-slate-800 truncate">R$ 0,00</h3>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-red-500 relative">
+                    <p class="text-[10px] text-red-600 font-bold uppercase mb-1 tracking-wider">Cenário Provável (Causa)</p>
+                    <h3 id="kpi-provavel" class="text-2xl font-bold text-slate-800 truncate">R$ 0,00</h3>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 border-l-4 border-l-slate-400 relative">
-                    <i class="fas fa-info-circle absolute top-4 right-4 text-slate-300 info-icon" title="Quantidade total de processos ativos."></i>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1.5 tracking-widest">Volume Processual</p>
-                    <h3 id="kpi-count" class="text-2xl font-black text-slate-800">0</h3>
+                <div class="bg-white p-5 rounded-xl card-shadow border-l-4 border-slate-400 relative">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase mb-1 tracking-wider">Volume Processual</p>
+                    <h3 id="kpi-count" class="text-2xl font-bold text-slate-800">0</h3>
                 </div>
             </div>
 
+            <!-- QUADRO COMPARATIVO -->
+            <div class="bg-white p-6 rounded-xl card-shadow mb-8 border border-blue-100 bg-gradient-to-r from-white to-blue-50 relative">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="font-bold text-slate-700"><i class="fas fa-balance-scale mr-2 text-blue-600"></i> Comparativo de Períodos</h4>
+                    <span class="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase font-bold mr-6">Base: Filtros Atuais</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="flex flex-col border-r border-blue-100 pr-4">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Volume de Entradas</span>
+                        <div class="flex items-end gap-3"><span id="compare-vol-val" class="text-3xl font-black text-slate-800">0</span><span id="compare-vol-perc" class="text-sm font-bold pb-1 text-gray-400">0%</span></div>
+                    </div>
+                    <div class="flex flex-col border-r border-blue-100 pr-4">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Total da Causa</span>
+                        <div class="flex items-end gap-3"><span id="compare-fin-val" class="text-3xl font-black text-slate-800">R$ 0</span><span id="compare-fin-perc" class="text-sm font-bold pb-1 text-gray-400">0%</span></div>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-xs text-gray-500 font-semibold mb-1">Taxa de Risco Provável</span>
+                        <div class="flex items-end gap-3"><span id="compare-risk-val" class="text-3xl font-black text-slate-800">0%</span><span id="compare-risk-perc" class="text-[10px] text-gray-500 font-medium pb-1">0 processos</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GRÁFICOS -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="bg-white p-8 rounded-2xl card-shadow border border-blue-50 bg-gradient-to-br from-white to-blue-50/30 relative flex flex-col justify-center">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-blue-200 info-icon" title="Compara o período atual com o ano anterior."></i>
-                    <div class="flex justify-between items-center mb-6">
-                        <h4 class="font-bold text-slate-800"><i class="fas fa-balance-scale mr-2 text-blue-500"></i> Comparativo de Períodos</h4>
-                        <span class="text-[9px] bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md uppercase font-bold border border-blue-200">Base Anual</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="flex flex-col border-r border-slate-100 pr-2">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Vol. Entradas</span>
-                            <div class="flex items-end gap-2"><span id="compare-vol-val" class="text-3xl font-black text-slate-800 tracking-tighter">0</span><span id="compare-vol-perc" class="text-xs font-bold pb-1 text-slate-400">0%</span></div>
-                        </div>
-                        <div class="flex flex-col border-r border-slate-100 pr-2">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Impacto Fin.</span>
-                            <div class="flex items-end gap-2"><span id="compare-fin-val" class="text-3xl font-black text-slate-800 tracking-tighter">R$ 0</span><span id="compare-fin-perc" class="text-xs font-bold pb-1 text-slate-400">0%</span></div>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase mb-2">Taxa Risco</span>
-                            <div class="flex items-end gap-2"><span id="compare-risk-val" class="text-3xl font-black text-slate-800 tracking-tighter">0.00%</span><span id="compare-risk-perc" class="text-[10px] text-slate-400 font-medium pb-1">0 proc.</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Distribuição percentual por matéria."></i>
-                    <h4 class="font-bold text-slate-800 mb-4"><i class="fas fa-chart-pie mr-2 text-pink-500"></i> Proporção por Matéria</h4>
-                    <div class="chart-container"><canvas id="chartPizzaMaterias"></canvas></div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative lg:col-span-2">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Evolução financeira e volumétrica mensal."></i>
-                    <h4 class="font-bold text-slate-800 mb-6"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal</h4>
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <h4 class="font-bold text-slate-700 mb-4"><i class="fas fa-chart-line mr-2 text-blue-500"></i> Evolução Temporal (Comparativo de Anos)</h4>
                     <div class="chart-container"><canvas id="chartEvolucao"></canvas></div>
                 </div>
-                
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative lg:col-span-1">
-                    <i class="fas fa-info-circle absolute top-5 right-5 text-slate-300 info-icon" title="Ranking das matérias com mais processos."></i>
-                    <h4 class="font-bold text-slate-800 mb-6"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Top Matérias</h4>
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <div class="flex justify-between items-start mb-4">
+                        <h4 class="font-bold text-slate-700"><i class="fas fa-chart-bar mr-2 text-indigo-500"></i> Quantidade de Processos por Matéria</h4>
+                        <span id="badgeMateria" class="text-[9px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold hidden uppercase mr-6">Filtro Ativo</span>
+                    </div>
                     <div class="chart-container"><canvas id="chartMaterias"></canvas></div>
                 </div>
             </div>
 
+            <!-- RANKINGS -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Top 5 Causas (Valor)</h4>
-                    <ul id="top-causas" class="space-y-3 text-xs overflow-y-auto pr-1 custom-scroll"></ul>
+                <div class="bg-white p-6 rounded-xl card-shadow relative">
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Top 5 Causas (Valor)</h4>
+                    <ul id="top-causas" class="space-y-3 text-xs"></ul>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Exposição por UF</h4>
-                    <div id="top-uf" class="flex-1 space-y-2 text-xs text-slate-600 overflow-y-auto pr-2 custom-scroll"></div>
+                <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Exposição por UF (Completo)</h4>
+                    <div id="top-uf" class="flex-1 space-y-2 text-xs text-gray-600 overflow-y-auto pr-2 custom-scroll"></div>
                 </div>
-                <div class="bg-white p-6 rounded-2xl card-shadow border border-slate-100 relative h-[350px] flex flex-col">
-                    <h4 class="font-bold text-slate-800 mb-4 pb-3 border-b border-slate-100 text-sm">Escritórios e Performance</h4>
+                <div class="bg-white p-6 rounded-xl card-shadow relative flex flex-col h-[350px]">
+                    <h4 class="font-bold text-slate-700 mb-4 border-b pb-2 text-sm">Performance por Escritório</h4>
                     <div id="resumo-escritorios" class="flex-1 space-y-2 overflow-y-auto pr-2 text-xs custom-scroll"></div>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden mb-8">
-                <div class="p-5 border-b border-slate-100 bg-white">
+            <!-- RESUMO POR MATÉRIA -->
+            <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
+                <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
                     <h4 class="font-bold text-slate-800">Resumo de Processos por Matéria</h4>
                 </div>
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse whitespace-nowrap">
-                        <thead class="text-slate-300 text-[10px] uppercase tracking-wider font-bold bg-slate-900">
+                        <thead class="text-white text-[10px] uppercase tracking-tighter bg-slate-800">
                             <tr>
-                                <th class="px-5 py-3.5">Matéria</th>
-                                <th class="px-5 py-3.5 text-center">Qtd Processos</th>
-                                <th class="px-5 py-3.5 text-right">Valor da Causa (R$)</th>
-                                <th class="px-5 py-3.5 text-right">Valor Atualizado (R$)</th>
-                                <th class="px-5 py-3.5 text-center">Volume (%)</th>
+                                <th class="px-4 py-3">Matéria</th>
+                                <th class="px-4 py-3 text-center">Qtd Processos</th>
+                                <th class="px-4 py-3 text-right">Valor da Causa (R$)</th>
+                                <th class="px-4 py-3 text-right">Valor Atualizado (R$)</th>
+                                <th class="px-4 py-3 text-center">Volume (%)</th>
                             </tr>
                         </thead>
-                        <tbody id="summaryMateriaBody" class="text-[11px] divide-y divide-slate-100 bg-white"></tbody>
+                        <tbody id="summaryMateriaBody" class="text-[11px] divide-y divide-gray-200"></tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl card-shadow border border-slate-100 overflow-hidden mb-8">
-                <div class="p-5 border-b border-slate-100 bg-white flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <h4 class="font-bold text-slate-800">Base Consolidada</h4>
-                        <span id="table-count-label" class="text-xs font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100"></span>
-                    </div>
+            <!-- TABELA INTEGRAL DE 24 COLUNAS -->
+            <div class="bg-white rounded-xl card-shadow overflow-hidden mb-8 border border-gray-100">
+                <div class="p-5 border-b border-gray-100 bg-slate-50 flex justify-between items-center relative">
+                    <h4 class="font-bold text-slate-800">Base Consolidada (24 Colunas) <span id="table-count" class="text-blue-600 ml-2"></span></h4>
+                    <span class="text-[10px] text-gray-400 italic mr-8">Clique no título da coluna para ordenar</span>
                 </div>
+                
                 <div class="table-container custom-scroll">
                     <table class="w-full text-left border-collapse whitespace-nowrap">
-                        <thead class="text-slate-300 text-[10px] uppercase tracking-wider font-bold bg-slate-900">
-                            <tr id="bigTableHeader"></tr>
+                        <thead class="text-white text-[10px] uppercase tracking-tighter">
+                            <tr>
+                                <th onclick="ordenarTabela('Status')" class="px-3 py-3 border-r border-slate-700">Status</th>
+                                <th onclick="ordenarTabela('Polo')" class="px-3 py-3 border-r border-slate-700">Polo</th>
+                                <th onclick="ordenarTabela('Número único')" class="px-3 py-3 border-r border-slate-700">Número único</th>
+                                <th onclick="ordenarTabela('Data de Distribuição')" class="px-3 py-3 border-r border-slate-700">Data Dist.</th>
+                                <th onclick="ordenarTabela('Segmento')" class="px-3 py-3 border-r border-slate-700">Segmento</th>
+                                <th onclick="ordenarTabela('Ano Distribuição')" class="px-3 py-3 border-r border-slate-700">Ano Dist.</th>
+                                <th onclick="ordenarTabela('Tipo de ação')" class="px-3 py-3 border-r border-slate-700">Tipo de ação</th>
+                                <th onclick="ordenarTabela('EMPRESA DO GRUPO')" class="px-3 py-3 border-r border-slate-700">Empresa</th>
+                                <th onclick="ordenarTabela('Polo Ativo - Nome')" class="px-3 py-3 border-r border-slate-700">Polo Ativo</th>
+                                <th onclick="ordenarTabela('Polo Passivo - Nome')" class="px-3 py-3 border-r border-slate-700">Polo Passivo</th>
+                                <th onclick="ordenarTabela('Escritório Responsável pela Demanda')" class="px-3 py-3 border-r border-slate-700">Escritório</th>
+                                <th onclick="ordenarTabela('Matéria')" class="px-3 py-3 border-r border-slate-700">Matéria</th>
+                                <th onclick="ordenarTabela('Objeto')" class="px-3 py-3 border-r border-slate-700">Objeto</th>
+                                <th onclick="ordenarTabela('Assunto Principal do Processo')" class="px-3 py-3 border-r border-slate-700">Assunto Princ.</th>
+                                <th onclick="ordenarTabela('Valor da causa')" class="px-3 py-3 border-r border-slate-700 text-right">Vlr. Causa</th>
+                                <th onclick="ordenarTabela('Valor Atualizado')" class="px-3 py-3 border-r border-slate-700 text-right">Vlr. Atualizado</th>
+                                <th onclick="ordenarTabela('Valor em Garantia')" class="px-3 py-3 border-r border-slate-700 text-right">Vlr. Garantia</th>
+                                <th onclick="ordenarTabela('Tipo de Garantia')" class="px-3 py-3 border-r border-slate-700">Tipo Garantia</th>
+                                <th onclick="ordenarTabela('Risk Assessment (probabilidade de PERDA)')" class="px-3 py-3 border-r border-slate-700">Risk Assessment</th>
+                                <th onclick="ordenarTabela('UF')" class="px-3 py-3 border-r border-slate-700 text-center">UF</th>
+                                <th onclick="ordenarTabela('Tribunal')" class="px-3 py-3 border-r border-slate-700">Tribunal</th>
+                                <th onclick="ordenarTabela('Valor de Condenação ou Acordo (casos encerrados)')" class="px-3 py-3 border-r border-slate-700 text-right">Vlr. Condenação</th>
+                                <th onclick="ordenarTabela('Mês/Ano pagamento')" class="px-3 py-3 border-r border-slate-700">Mês/Ano Pagto</th>
+                                <th onclick="ordenarTabela('Observação')" class="px-3 py-3">Observação</th>
+                            </tr>
                         </thead>
-                        <tbody id="processTableBody" class="text-[11px] divide-y divide-slate-100 bg-white"></tbody>
+                        <tbody id="processTableBody" class="text-[11px] divide-y divide-gray-200 bg-white"></tbody>
                     </table>
                 </div>
             </div>
@@ -250,305 +282,275 @@
     </div>
 
     <script>
-        Chart.register(ChartDataLabels);
-        Chart.defaults.plugins.datalabels.display = false;
-
-        const API_URL = "https://gogroup-api.onrender.com/api/dashboard";
+        const API_URL = "http://127.0.0.1:8000/api/dashboard";
         let DADOS_ORIGINAIS = [];
-        let chartEvolucao, chartMaterias, chartPizza;
-        let filtrosDinamicos = { escritorio: null, uf: null, materia: null };
+        let chartEvolucao, chartMaterias;
         let ordenacaoAtual = { coluna: '', dir: 1 };
-
+        let searchTimeout; 
+        
+        const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         const MESES_CURTOS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-        const colunasBase = [
-            'Status','Polo','Número único','Data de Distribuição','Segmento','Ano Distribuição','Tipo de ação',
-            'EMPRESA DO GRUPO','Polo Ativo - Nome','Polo Passivo - Nome','Escritório Responsável pela Demanda',
-            'Matéria','Objeto','Assunto Principal do Processo','Valor da causa','Valor Atualizado','Valor em Garantia',
-            'Tipo de Garantia','Risk Assessment (probabilidade de PERDA)','UF','Tribunal',
-            'Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'
-        ];
+        let filtrosDinamicos = { escritorio: null, uf: null, materia: null };
 
-        // --- UTILITÁRIOS ---
-        const findKey = (obj, partialKey) => {
-            if (!obj) return null;
-            const search = partialKey.toLowerCase().trim();
-            return Object.keys(obj).find(k => k.toLowerCase().trim().includes(search));
-        };
-
-        const getValue = (obj, partialKey) => {
-            const key = findKey(obj, partialKey);
-            return key ? obj[key] : null;
-        };
-
-        const getFloat = (obj, partialKey) => {
-            let val = getValue(obj, partialKey);
-            if (val === null || val === undefined) return 0;
-            if (typeof val === 'number') return val;
-            let strVal = String(val).replace('R$', '').replace(/\s/g, '').trim();
-            if (strVal.includes(',') && strVal.includes('.')) { strVal = strVal.replace(/\./g, '').replace(',', '.'); } 
-            else if (strVal.includes(',')) { strVal = strVal.replace(',', '.'); }
-            const parsed = parseFloat(strVal);
-            return isNaN(parsed) ? 0 : parsed;
-        };
-
-        // --- CARGA DE DADOS ---
+        // --- INTEGRAÇÃO COM PYTHON (COM ALERTA VISUAL) ---
         async function carregarDadosAPI() {
-            const btn = document.getElementById('updateBtn');
-            const alertBox = document.getElementById('api-alert');
-            const errorText = document.getElementById('error-text');
-            
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Sincronizando...';
-            btn.classList.add('btn-loading');
-            
             try {
                 const response = await fetch(API_URL);
-                if (!response.ok) throw new Error(`Erro: ${response.status}`);
+                if (!response.ok) throw new Error("A API retornou erro: " + response.status);
                 
                 const data = await response.json();
-                DADOS_ORIGINAIS = data.processos || [];
-
-                if (DADOS_ORIGINAIS.length > 0) {
-                    alertBox.classList.add('hidden');
-                    initFiltrosBasicos();
-                    initHeaderTabela();
-                    atualizarDashboard();
+                
+                if (data.processos && data.processos.length > 0) {
+                    DADOS_ORIGINAIS = data.processos;
+                    document.getElementById('api-alert').classList.add('hidden'); // Esconde alerta de erro
                 } else {
-                    alertBox.classList.remove('hidden');
-                    errorText.innerText = "A API conectou, mas a aba está vazia.";
+                    throw new Error("Base Vazia");
                 }
             } catch (e) {
-                console.error(e);
-                alertBox.classList.remove('hidden');
-                errorText.innerHTML = "<strong>Falha na Ligação:</strong> O servidor pode estar a iniciar (aguarde 1 min) ou está offline. <br> Detalhe: " + e.message;
-            } finally {
-                btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar Dados';
-                btn.classList.remove('btn-loading');
+                console.warn("Falha na conexão, ativando base de demonstração", e);
+                document.getElementById('api-alert').classList.remove('hidden'); // MOSTRA O ALERTA VERMELHO
+                
+                // Dados falsos de demonstração para não quebrar a tela
+                DADOS_ORIGINAIS = [
+                    {'Status':'Ativo', 'Polo':'Passivo', 'Número único':'001-2024.1', 'Data de Distribuição':'2024-01-15', 'Ano Distribuição':2024, 'EMPRESA DO GRUPO':'GoLog S.A', 'Escritório Responsável pela Demanda':'Almeida Adv.', 'Matéria':'Trabalhista', 'Valor da causa':150000, 'Risk Assessment (probabilidade de PERDA)':'Provável', 'UF':'SP'},
+                    {'Status':'Ativo', 'Polo':'Ativo', 'Número único':'002-2024.2', 'Data de Distribuição':'2024-02-10', 'Ano Distribuição':2024, 'EMPRESA DO GRUPO':'GoTech Ltda', 'Escritório Responsável pela Demanda':'Silva & Silva', 'Matéria':'Tributário', 'Valor da causa':320000, 'Risk Assessment (probabilidade de PERDA)':'Possível', 'UF':'RJ'},
+                    {'Status':'Ativo', 'Polo':'Passivo', 'Número único':'003-2024.5', 'Data de Distribuição':'2024-05-20', 'Ano Distribuição':2024, 'EMPRESA DO GRUPO':'GoLog S.A', 'Escritório Responsável pela Demanda':'Almeida Adv.', 'Matéria':'Consumidor', 'Valor da causa':25000, 'Risk Assessment (probabilidade de PERDA)':'Remota', 'UF':'MG'},
+                    {'Status':'Encerrado', 'Polo':'Passivo', 'Número único':'004-2023.1', 'Data de Distribuição':'2023-01-15', 'Ano Distribuição':2023, 'EMPRESA DO GRUPO':'GoLog S.A', 'Escritório Responsável pela Demanda':'Almeida Adv.', 'Matéria':'Trabalhista', 'Valor da causa':140000, 'Risk Assessment (probabilidade de PERDA)':'Provável', 'UF':'SP'},
+                    {'Status':'Ativo', 'Polo':'Passivo', 'Número único':'005-2023.2', 'Data de Distribuição':'2023-02-12', 'Ano Distribuição':2023, 'EMPRESA DO GRUPO':'GoTech Ltda', 'Escritório Responsável pela Demanda':'Silva & Silva', 'Matéria':'Tributário', 'Valor da causa':280000, 'Risk Assessment (probabilidade de PERDA)':'Possível', 'UF':'RJ'},
+                    {'Status':'Ativo', 'Polo':'Passivo', 'Número único':'006-2022.5', 'Data de Distribuição':'2022-05-20', 'Ano Distribuição':2022, 'EMPRESA DO GRUPO':'GoLog S.A', 'Escritório Responsável pela Demanda':'Costa Advogados', 'Matéria':'Cível', 'Valor da causa':45000, 'Risk Assessment (probabilidade de PERDA)':'Remota', 'UF':'BA'}
+                ];
             }
+            initFiltrosDropwdown();
+            atualizarDashboard();
         }
 
-        // --- INICIALIZAÇÃO ---
-        function initHeaderTabela() {
-            document.getElementById('bigTableHeader').innerHTML = colunasBase.map(c => 
-                `<th onclick="ordenarTabela('${c}')" class="px-4 py-3.5 border-r border-slate-800 hover:bg-slate-800 transition cursor-pointer">${c} <i class="fas fa-sort ml-1 opacity-30"></i></th>`
-            ).join('');
+        // --- PPTX EXPORT ---
+        async function exportarPPT() {
+            const btn = document.getElementById('btnExportarPPT');
+            const originalHTML = btn.innerHTML;
+            
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Gerando PPT...';
+                btn.disabled = true; btn.classList.add('opacity-75', 'cursor-not-allowed');
+
+                let pptx = new PptxGenJS(); pptx.layout = 'LAYOUT_16x9'; pptx.author = 'GoGroup';
+                const dataHoje = new Date().toLocaleDateString('pt-BR');
+                const vCausa = document.getElementById('kpi-total').innerText;
+                const vAtual = document.getElementById('kpi-atualizado').innerText;
+                const vProvavel = document.getElementById('kpi-provavel').innerText;
+                const vQtd = document.getElementById('kpi-count').innerText;
+
+                let slide1 = pptx.addSlide(); slide1.background = { color: "0f172a" };
+                slide1.addText("Relatório Executivo - Contencioso", { x: 0.5, y: 0.8, w: "90%", h: 1, fontSize: 32, color: "ffffff", bold: true });
+                slide1.addText(`Atualizado em: ${dataHoje}`, { x: 0.5, y: 1.5, w: "90%", h: 0.5, fontSize: 14, color: "94a3b8", italic: true });
+
+                const kc = { y: 3.0, w: 2.2, h: 1.2, fill: { color: "ffffff" }, align: "center" };
+                slide1.addShape(pptx.ShapeType.rect, { ...kc, x: 0.5 });
+                slide1.addText([{text: "Total da Causa\n", options: {fontSize: 10, color:"64748b"}}, {text: vCausa, options: {fontSize: 16, color:"1e293b", bold: true}}], { x: 0.5, ...kc });
+                slide1.addShape(pptx.ShapeType.rect, { ...kc, x: 3.0 });
+                slide1.addText([{text: "Valor Atualizado\n", options: {fontSize: 10, color:"22c55e"}}, {text: vAtual, options: {fontSize: 16, color:"1e293b", bold: true}}], { x: 3.0, ...kc });
+                slide1.addShape(pptx.ShapeType.rect, { ...kc, x: 5.5 });
+                slide1.addText([{text: "Cenário Provável\n", options: {fontSize: 10, color:"ef4444"}}, {text: vProvavel, options: {fontSize: 16, color:"1e293b", bold: true}}], { x: 5.5, ...kc });
+                slide1.addShape(pptx.ShapeType.rect, { ...kc, x: 8.0 });
+                slide1.addText([{text: "Volume Processual\n", options: {fontSize: 10, color:"64748b"}}, {text: vQtd, options: {fontSize: 16, color:"1e293b", bold: true}}], { x: 8.0, ...kc });
+
+                let slide2 = pptx.addSlide(); slide2.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: "100%", h: 0.6, fill: { color: "1e293b" } });
+                slide2.addText("Evolução e Volumetria", { x: 0.2, y: 0.05, w: "90%", h: 0.5, fontSize: 18, color: "ffffff", bold: true });
+
+                const cEvol = document.getElementById('chartEvolucao'); const cMat = document.getElementById('chartMaterias');
+                if (cEvol && cMat) {
+                    slide2.addImage({ data: getCanvasImageWithWhiteBackground(cEvol), x: 0.2, y: 1.0, w: 4.8, h: 4.0 });
+                    slide2.addImage({ data: getCanvasImageWithWhiteBackground(cMat), x: 5.2, y: 1.0, w: 4.8, h: 4.0 });
+                }
+                await pptx.writeFile({ fileName: `GoGroup_Contencioso_${dataHoje.replace(/\//g, '-')}.pptx` });
+
+            } catch (error) { alert("Erro ao exportar PPT."); } 
+            finally { btn.innerHTML = originalHTML; btn.disabled = false; btn.classList.remove('opacity-75', 'cursor-not-allowed'); }
         }
 
-        function initFiltrosBasicos() {
-            const mats = [...new Set(DADOS_ORIGINAIS.map(p => getValue(p, 'Matéria')))].filter(m=>m).sort();
+        function getCanvasImageWithWhiteBackground(canvas) {
+            const tc = document.createElement('canvas'); tc.width = canvas.width; tc.height = canvas.height;
+            const ctx = tc.getContext('2d'); ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, tc.width, tc.height); ctx.drawImage(canvas, 0, 0);
+            return tc.toDataURL("image/png");
+        }
+
+        // --- UX / UI ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar.classList.contains('sidebar-hidden')) { sidebar.classList.remove('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.add('hidden'); } 
+            else { sidebar.classList.add('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.remove('hidden'); }
+        }
+        function toggleDropdown(id) {
+            const d = document.getElementById(id); const s = d.classList.contains('show');
+            document.querySelectorAll('.dropdown-content').forEach(x => x.classList.remove('show'));
+            if (!s) d.classList.add('show');
+        }
+        function closeDropdowns(e) { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
+        function debounceSearch() { clearTimeout(searchTimeout); searchTimeout = setTimeout(atualizarDashboard, 300); }
+        function toggleAllFilters(cls, checked) { document.querySelectorAll('.' + cls).forEach(el => el.checked = checked); atualizarDashboard(); }
+        function checkSelectAllState(cls, allId) {
+            const all = document.querySelectorAll('.' + cls).length; const checked = document.querySelectorAll('.' + cls + ':checked').length;
+            document.getElementById(allId).checked = (all === checked && all > 0); atualizarDashboard();
+        }
+
+        // --- LÓGICA DE FILTROS ---
+        function initFiltrosDropwdown() {
+            const mats = [...new Set(DADOS_ORIGINAIS.map(p => p['Matéria']))].filter(m=>m).sort();
             document.getElementById('filterMateriaSidebar').innerHTML = '<option value="">Todas as Matérias</option>' + mats.map(m => `<option value="${m}">${m}</option>`).join('');
 
-            const anos = [...new Set(DADOS_ORIGINAIS.map(p => {
-                let a = getValue(p, 'Ano Distribuição');
-                if (!a) {
-                    let d = getValue(p, 'Data de Distribuição');
-                    if(d) a = String(d).split('-')[0];
-                }
-                return a;
-            }))].filter(a=>a).sort((a,b)=>b-a);
-
-            let yHtml = '';
-            anos.forEach((a, i) => {
-                const check = i < 2 ? 'checked' : '';
-                yHtml += `<label class="flex items-center p-2.5 hover:bg-slate-800 cursor-pointer text-slate-300 text-xs transition-colors"><input type="checkbox" value="${a}" class="filter-year mr-3 accent-blue-500" onchange="atualizarDashboard()" ${check}>${a}</label>`;
-            });
+            const anos = [...new Set(DADOS_ORIGINAIS.map(p => p['Ano Distribuição'] || (p['Data de Distribuição'] ? p['Data de Distribuição'].split('-')[0] : null)))].filter(a=>a).sort((a,b)=>b-a);
+            let yHtml = `<label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-white text-xs font-bold border-b border-slate-600 mb-1"><input type="checkbox" id="selectAllYears" onchange="toggleAllFilters('filter-year', this.checked)" class="mr-3 accent-blue-500" checked>Todos</label>`;
+            anos.forEach(a => yHtml += `<label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-gray-300 text-xs"><input type="checkbox" value="${a}" onchange="checkSelectAllState('filter-year', 'selectAllYears')" class="mr-3 filter-year accent-blue-500" checked>${a}</label>`);
             document.getElementById('yearDropdown').innerHTML = yHtml;
+
+            let mHtml = `<label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-white text-xs font-bold border-b border-slate-600 mb-1"><input type="checkbox" id="selectAllMonths" onchange="toggleAllFilters('filter-month', this.checked)" class="mr-3 accent-blue-500" checked>Todos</label>`;
+            NOMES_MESES.forEach((m, i) => mHtml += `<label class="flex items-center p-2 hover:bg-slate-700 cursor-pointer text-gray-300 text-xs"><input type="checkbox" value="${(i+1).toString().padStart(2,'0')}" onchange="checkSelectAllState('filter-month', 'selectAllMonths')" class="mr-3 filter-month accent-blue-500" checked>${m}</label>`);
+            document.getElementById('monthDropdown').innerHTML = mHtml;
         }
 
-        // --- FILTRAGEM E ATUALIZAÇÃO ---
+        function setFiltroDinamico(t, v) { filtrosDinamicos[t] = (filtrosDinamicos[t] === v) ? null : v; atualizarDashboard(); }
+        function limparFiltrosDinamicos() {
+            filtrosDinamicos = { escritorio: null, uf: null, materia: null };
+            document.getElementById('filterStatus').value = ""; document.getElementById('filterRisco').value = ""; document.getElementById('filterMateriaSidebar').value = ""; document.getElementById('sidebarSearch').value = "";
+            toggleAllFilters('filter-year', true); toggleAllFilters('filter-month', true);
+            document.getElementById('selectAllYears').checked = true; document.getElementById('selectAllMonths').checked = true;
+        }
+
         function atualizarDashboard() {
-            if (DADOS_ORIGINAIS.length === 0) return;
-            
             const busca = document.getElementById('sidebarSearch').value.toLowerCase();
             const status = document.getElementById('filterStatus').value;
             const risco = document.getElementById('filterRisco').value;
             const mSide = document.getElementById('filterMateriaSidebar').value;
-            const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(e => String(e.value));
+            const anosSel = Array.from(document.querySelectorAll('.filter-year:checked')).map(e => e.value);
+            const mesesSel = Array.from(document.querySelectorAll('.filter-month:checked')).map(e => e.value);
+
+            document.getElementById('yearLabel').innerText = anosSel.length ? `${anosSel.length} Anos` : "Selec. Anos";
+            document.getElementById('monthLabel').innerText = mesesSel.length ? `${mesesSel.length} Meses` : "Selec. Meses";
 
             let filtrados = DADOS_ORIGINAIS.filter(p => {
-                const b = !busca || JSON.stringify(p).toLowerCase().includes(busca);
-                const pStatus = getValue(p, 'Status');
-                const s = !status || (pStatus && String(pStatus).includes(status));
-                const pRisco = getValue(p, 'Risk Assessment');
-                const r = !risco || (pRisco && String(pRisco).includes(risco));
+                const b = !busca || Object.values(p).join(' ').toLowerCase().includes(busca);
+                const aP = p['Ano Distribuição'] ? String(p['Ano Distribuição']) : (p['Data de Distribuição'] ? p['Data de Distribuição'].split('-')[0] : null);
+                const mP = p['Data de Distribuição'] ? String(p['Data de Distribuição']).split('-')[1] : null;
                 
-                const pMat = getValue(p, 'Matéria');
-                const mat = (!mSide || pMat === mSide) && (!filtrosDinamicos.materia || pMat === filtrosDinamicos.materia);
-                
-                const pEsc = getValue(p, 'Escritório');
-                const esc = !filtrosDinamicos.escritorio || (pEsc && String(pEsc).includes(filtrosDinamicos.escritorio));
-                
-                const pUf = getValue(p, 'UF');
-                const uf = !filtrosDinamicos.uf || pUf === filtrosDinamicos.uf;
-                
-                let a = getValue(p, 'Ano Distribuição');
-                if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
-                const anoMatch = anosSel.length === 0 || anosSel.includes(String(a));
-
-                return b && s && r && mat && esc && uf && anoMatch;
+                return b && (!status || p['Status'] === status) && 
+                       (!risco || String(p['Risk Assessment (probabilidade de PERDA)']).includes(risco)) &&
+                       (!filtrosDinamicos.escritorio || p['Escritório Responsável pela Demanda'] === filtrosDinamicos.escritorio) &&
+                       (!filtrosDinamicos.uf || p['UF'] === filtrosDinamicos.uf) &&
+                       (!filtrosDinamicos.materia || p['Matéria'] === filtrosDinamicos.materia) &&
+                       (!mSide || p['Matéria'] === mSide) &&
+                       (anosSel.length===0 || anosSel.includes(aP)) && 
+                       (mesesSel.length===0 || mesesSel.includes(mP));
             });
 
-            // KPIs
-            const vCausa = filtrados.reduce((s, p) => s + getFloat(p, 'Valor da causa'), 0);
-            const vAtual = filtrados.reduce((s, p) => s + getFloat(p, 'Valor Atualizado'), 0);
-            const vProv = filtrados.filter(p => String(getValue(p, 'Risk Assessment')||'').includes('Provável')).reduce((s, p) => s + getFloat(p, 'Valor da causa'), 0);
+            atualizarComparativo(filtrados, anosSel, mesesSel);
+            atualizarBadges(status, risco, mSide);
 
-            document.getElementById('kpi-total').innerText = vCausa.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('kpi-atualizado').innerText = vAtual.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('kpi-provavel').innerText = vProv.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            const tCausa = filtrados.reduce((s, p) => s + (Number(p['Valor da causa'])||0), 0);
+            const tAtual = filtrados.reduce((s, p) => s + (Number(p['Valor Atualizado'])||0), 0);
+            const prov = filtrados.filter(p => String(p['Risk Assessment (probabilidade de PERDA)']).includes('Provável')).reduce((s, p) => s + (Number(p['Valor da causa'])||0), 0);
+
+            document.getElementById('kpi-total').innerText = `R$ ${tCausa.toLocaleString('pt-BR')}`;
+            document.getElementById('kpi-atualizado').innerText = `R$ ${tAtual.toLocaleString('pt-BR')}`;
+            document.getElementById('kpi-provavel').innerText = `R$ ${prov.toLocaleString('pt-BR')}`;
             document.getElementById('kpi-count').innerText = filtrados.length;
-            document.getElementById('table-count-label').innerText = `${filtrados.length} processos`;
+            document.getElementById('table-count').innerText = `(${filtrados.length} itens)`;
 
-            atualizarComparativo(filtrados, anosSel);
-            renderizarGraficos(filtrados, anosSel);
-            renderizarRankings(filtrados);
-            renderizarResumoMateria(filtrados);
-            renderizarTabela(filtrados);
-            atualizarBadges();
+            renderizarTabela(filtrados); renderizarResumoMateria(filtrados); renderizarRankings(filtrados); renderizarEscritorios(filtrados); renderizarGraficos(filtrados, anosSel, mesesSel);
         }
 
-        function atualizarComparativo(atuais, anos) {
+        function atualizarBadges(s, r, m) {
+            const sec = document.getElementById('activeFiltersSection'); const b = document.getElementById('filterBadges');
+            b.innerHTML = ''; let act = false;
+            const add = (v, l) => { if(v) { act = true; b.innerHTML += `<div class="text-[9px] bg-blue-500/20 text-blue-300 px-2 py-1 rounded border border-blue-500/30 mb-1">${l}: ${v}</div>`; } };
+            add(s, "Status"); add(r, "Risco"); add(m, "Matéria(S)"); add(filtrosDinamicos.materia, "Matéria(G)"); add(filtrosDinamicos.escritorio, "Escrit."); add(filtrosDinamicos.uf, "UF");
+            sec.classList.toggle('hidden', !act); document.getElementById('badgeMateria').style.display = filtrosDinamicos.materia ? 'block' : 'none';
+        }
+
+        function atualizarComparativo(atuais, anos, meses) {
             if(!anos.length) return;
             const ant = (Math.min(...anos.map(Number)) - 1).toString();
             const pass = DADOS_ORIGINAIS.filter(p => {
-                let a = getValue(p, 'Ano Distribuição');
-                if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
-                return String(a) === ant;
+                const aP = p['Ano Distribuição'] ? String(p['Ano Distribuição']) : (p['Data de Distribuição'] ? p['Data de Distribuição'].split('-')[0] : null);
+                const mP = p['Data de Distribuição'] ? p['Data de Distribuição'].split('-')[1] : null;
+                return aP === ant && (!meses.length || meses.includes(mP));
             });
 
-            const vA = atuais.length; const vP = pass.length; 
-            const pV = vP ? ((vA-vP)/vP)*100 : 0;
+            const vA = atuais.length; const vP = pass.length; const pV = vP ? ((vA-vP)/vP)*100 : 0;
             document.getElementById('compare-vol-val').innerText = vA;
             document.getElementById('compare-vol-perc').innerText = `${pV>0?'+':''}${pV.toFixed(1)}%`;
-            document.getElementById('compare-vol-perc').className = `text-xs font-bold pb-1 ${pV<0?'text-green-500':'text-red-500'}`;
+            document.getElementById('compare-vol-perc').className = `text-sm font-bold pb-1 ${pV<0?'text-green-500':(pV>0?'text-red-500':'text-gray-400')}`;
 
-            const fA = atuais.reduce((s,p)=>s+getFloat(p, 'Valor da causa'),0); 
-            const fP = pass.reduce((s,p)=>s+getFloat(p, 'Valor da causa'),0); 
-            const pF = fP ? ((fA-fP)/fP)*100 : 0;
-            document.getElementById('compare-fin-val').innerText = fA.toLocaleString('pt-BR', {notation:'compact', maximumFractionDigits:1});
+            const fA = atuais.reduce((s,p)=>s+(Number(p['Valor da causa'])||0),0); const fP = pass.reduce((s,p)=>s+(Number(p['Valor da causa'])||0),0); const pF = fP ? ((fA-fP)/fP)*100 : 0;
+            document.getElementById('compare-fin-val').innerText = `R$ ${fA.toLocaleString('pt-BR',{notation:'compact'})}`;
             document.getElementById('compare-fin-perc').innerText = `${pF>0?'+':''}${pF.toFixed(1)}%`;
+            document.getElementById('compare-fin-perc').className = `text-sm font-bold pb-1 ${pF<0?'text-green-500':(pF>0?'text-red-500':'text-gray-400')}`;
 
-            const qProv = atuais.filter(p => String(getValue(p, 'Risk Assessment')||'').includes('Provável')).length;
-            const tRisco = vA ? ((qProv/vA)*100).toFixed(2) : '0.00';
-            document.getElementById('compare-risk-val').innerText = `${tRisco}%`;
+            const qProv = atuais.filter(p => String(p['Risk Assessment (probabilidade de PERDA)']).includes('Provável')).length;
+            document.getElementById('compare-risk-val').innerText = `${vA ? (qProv/vA)*100 : 0}%`;
             document.getElementById('compare-risk-perc').innerText = `${qProv} proc.`;
         }
 
-        // --- GRÁFICOS ---
-        function renderizarGraficos(dados, anos) {
-            const matAggr = dados.reduce((a,p)=>{ 
-                const m = getValue(p, 'Matéria') || 'Outros'; 
-                if(!a[m]) a[m] = {q:0, v:0}; a[m].q++; a[m].v += getFloat(p, 'Valor da causa'); return a; 
-            }, {});
-            const mS = Object.entries(matAggr).sort((a,b)=>b[1].q-a[1].q).slice(0,8);
-
-            // Pizza
-            if(chartPizza) chartPizza.destroy();
-            chartPizza = new Chart(document.getElementById('chartPizzaMaterias'), {
-                type: 'doughnut',
-                data: { labels: mS.map(m=>m[0]), datasets: [{ data: mS.map(m=>m[1].q), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'], borderWidth: 0 }] },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } } } }
-            });
-
-            // Barras Matérias
+        function renderizarGraficos(dados, anos, meses) {
+            const mat = dados.reduce((a,p)=>{ const m=p['Matéria']||'Outros'; a[m]=(a[m]||0)+1; return a; }, {});
+            const mS = Object.entries(mat).sort((a,b)=>b[1]-a[1]).slice(0,8);
             if(chartMaterias) chartMaterias.destroy();
             chartMaterias = new Chart(document.getElementById('chartMaterias'), {
-                type: 'bar',
-                data: { labels: mS.map(m=>m[0]), datasets: [{ data: mS.map(m=>m[1].q), backgroundColor: '#6366f1', borderRadius: 6 }] },
-                options: { 
-                    responsive: true, maintainAspectRatio: false, 
-                    plugins: { legend: { display: false } },
-                    onClick: (e, els) => { if(els.length) setFiltroDinamico('materia', mS[els[0].index][0]); }
-                }
+                type: 'bar', data: { labels: mS.map(m=>m[0]), datasets: [{data: mS.map(m=>m[1]), backgroundColor: mS.map(m=>m[0]===filtrosDinamicos.materia?'#1d4ed8':'#6366f1'), borderRadius:4}] },
+                options: { responsive: true, maintainAspectRatio: false, plugins:{legend:{display:false}}, onClick: (e, els) => { if(els.length) setFiltroDinamico('materia', mS[els[0].index][0]); } }
             });
 
-            // Evolução
-            const sY = [...anos].sort((a,b)=>b-a).slice(0,2);
-            const datasets = [];
-            const cores = [{b:'rgba(59,130,246,0.6)',l:'#1d4ed8'},{b:'rgba(249,115,22,0.6)',l:'#c2410c'}];
+            const sY = [...anos].sort((a,b)=>b-a);
+            const dEvol = [];
+            const cores = [{b:'rgba(59,130,246,0.7)',l:'#1d4ed8'},{b:'rgba(249,115,22,0.7)',l:'#c2410c'}];
             sY.forEach((ano, i) => {
                 const c = cores[i%2];
-                const dAno = MESES_CURTOS.map((_, idx) => {
-                    const mesNum = (idx + 1).toString().padStart(2, '0');
-                    return dados.filter(p => {
-                        let a = getValue(p, 'Ano Distribuição');
-                        if(!a) { let d = getValue(p, 'Data de Distribuição'); if(d) a = String(d).split('-')[0]; }
-                        let d = getValue(p, 'Data de Distribuição');
-                        let m = d ? String(d).split('-')[1] : null;
-                        return String(a) === ano && m === mesNum;
-                    }).reduce((s,p)=>s+getFloat(p, 'Valor da causa'), 0);
-                });
-                datasets.push({ type: 'bar', label: `Vol ${ano}`, data: dAno, backgroundColor: c.b, borderRadius: 4 });
-                datasets.push({ type: 'line', label: `Tend. ${ano}`, data: dAno, borderColor: c.l, tension: 0.4, borderWidth: 2 });
+                const dAno = meses.map(m => dados.filter(p=> (p['Ano Distribuição']||p['Data de Distribuição']?.split('-')[0])==ano && p['Data de Distribuição']?.split('-')[1]==m).reduce((s,p)=>s+(Number(p['Valor da causa'])||0),0));
+                dEvol.push({ type: 'bar', label: `Vlr ${ano}`, data: dAno, backgroundColor: c.b, yAxisID: 'y' });
+                dEvol.push({ type: 'line', label: `Tend. ${ano}`, data: dAno, borderColor: c.l, tension: 0.3, yAxisID: 'y' });
             });
             if(chartEvolucao) chartEvolucao.destroy();
             chartEvolucao = new Chart(document.getElementById('chartEvolucao'), {
-                data: { labels: MESES_CURTOS, datasets },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { callback: v => 'R$' + (v/1000).toFixed(0) + 'k' } } } }
+                data: { labels: meses.map(m=>MESES_CURTOS[m-1]), datasets: dEvol },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y:{type:'linear',position:'left', ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k'}} } }
             });
         }
 
-        // --- RANKINGS E TABELAS ---
         function renderizarRankings(dados) {
-            document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>getFloat(b,'Valor da causa')-getFloat(a,'Valor da causa')).slice(0,5).map((p,i)=>
-                `<li class="flex items-center gap-3 p-2.5 bg-slate-50 rounded-xl border-l-4 border-blue-500"><span class="font-bold text-blue-500">#${i+1}</span><div class="flex-1 truncate text-[10px] font-bold">${getValue(p, 'Número único') || 'N/A'}</div><span class="font-black text-slate-800">R$ ${getFloat(p,'Valor da causa').toLocaleString('pt-BR',{notation:'compact'})}</span></li>`
-            ).join('');
+            document.getElementById('top-causas').innerHTML = [...dados].sort((a,b)=>(b['Valor da causa']||0)-(a['Valor da causa']||0)).slice(0,5).map((p,i)=>`<li class="flex items-center gap-3 p-2 bg-gray-50 rounded border-l-4 border-blue-500"><span class="font-bold text-blue-700">#${i+1}</span><div class="flex-1 truncate"><p class="font-bold truncate text-[10px]">${p['Número único']}</p></div><span class="font-bold">R$ ${Number(p['Valor da causa']).toLocaleString('pt-BR',{notation:'compact'})}</span></li>`).join('');
             
-            const ufM = dados.reduce((a,p)=>{ const u=getValue(p, 'UF')||'N/I'; a[u]=(a[u]||0)+getFloat(p,'Valor da causa'); return a; }, {});
-            const sortedUF = Object.entries(ufM).sort((a,b)=>b[1]-a[1]);
-            const maxUF = sortedUF.length ? sortedUF[0][1] : 1;
-            document.getElementById('top-uf').innerHTML = sortedUF.map(([u,v])=>
-                `<div onclick="setFiltroDinamico('uf','${u}')" class="p-2 rounded-lg clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100 border border-blue-200':'bg-white'}"><div class="flex justify-between font-bold mb-1"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class="w-full bg-slate-100 h-1.5 rounded-full"><div class="bg-blue-500 h-full rounded-full" style="width:${(v/maxUF*100)}%"></div></div></div>`
-            ).join('');
+            const uM = dados.reduce((a,p)=>{ const u=p['UF']||'N/I'; a[u]=(a[u]||0)+(Number(p['Valor da causa'])||0); return a; }, {});
+            const aU = Object.entries(uM).sort((a,b)=>b[1]-a[1]); const mU = aU.length?aU[0][1]:1;
+            document.getElementById('top-uf').innerHTML = aU.map(([u,v])=>`<div onclick="setFiltroDinamico('uf','${u}')" class="p-1 mb-1 rounded clickable-item ${filtrosDinamicos.uf===u?'bg-blue-100':'bg-gray-50'}"><div class="flex justify-between text-[10px] font-bold mb-1"><span>${u}</span><span>R$ ${v.toLocaleString('pt-BR',{notation:'compact'})}</span></div><div class="w-full bg-gray-200 h-1 rounded-full"><div class="bg-blue-500 h-full" style="width:${(v/mU*100)}%"></div></div></div>`).join('');
+        }
 
-            const escM = dados.reduce((a,p)=>{ const e=getValue(p, 'Escritório')||'N/I'; if(!a[e])a[e]={q:0,v:0}; a[e].q++; a[e].v+=getFloat(p,'Valor da causa'); return a; }, {});
-            document.getElementById('resumo-escritorios').innerHTML = Object.entries(escM).sort((a,b)=>b[1].v-a[1].v).map(([e,i])=>
-                `<div onclick="setFiltroDinamico('escritorio','${e}')" class="p-3 border rounded-xl clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':'bg-white border-slate-100'}"><div class="flex justify-between font-bold text-[10px] mb-1"><span>${e}</span><span class="text-blue-600">${i.q}</span></div><div class="text-[9px] text-slate-500">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`
-            ).join('');
+        function renderizarEscritorios(dados) {
+            const eM = dados.reduce((a,p)=>{ const e=p['Escritório Responsável pela Demanda']||'Interno'; if(!a[e]) a[e]={q:0,v:0}; a[e].q++; a[e].v+=(Number(p['Valor da causa'])||0); return a; }, {});
+            document.getElementById('resumo-escritorios').innerHTML = Object.entries(eM).sort((a,b)=>b[1].v-a[1].v).map(([e,i])=>`<div onclick="setFiltroDinamico('escritorio','${e}')" class="p-2 mb-2 border rounded-lg clickable-item ${filtrosDinamicos.escritorio===e?'filter-active':''}"><div class="flex justify-between font-bold text-[9px] uppercase"><span class="truncate w-32">${e}</span><span class="text-blue-600">${i.q}</span></div><div class="text-[9px] text-slate-500">R$ ${i.v.toLocaleString('pt-BR')}</div></div>`).join('');
         }
 
         function renderizarResumoMateria(dados) {
-            const m = dados.reduce((a,p)=>{ const mat=getValue(p, 'Matéria')||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=getFloat(p, 'Valor da causa'); a[mat].va+=getFloat(p, 'Valor Atualizado'); return a; },{});
-            const t = dados.length || 1;
-            document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc-a[1].vc).map(([mat,i])=>
-                `<tr class="hover:bg-slate-50 transition-colors"><td class="px-5 py-3 font-bold text-slate-700">${mat}</td><td class="px-5 py-3 text-center">${i.q}</td><td class="px-5 py-3 text-right font-bold">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-right text-green-600 font-bold">R$ ${i.va.toLocaleString('pt-BR')}</td><td class="px-5 py-3 text-center text-slate-400 font-medium">${((i.q/t)*100).toFixed(1)}%</td></tr>`
-            ).join('');
+            const m = dados.reduce((a,p)=>{ const mat=p['Matéria']||'Outros'; if(!a[mat])a[mat]={q:0,vc:0,va:0}; a[mat].q++; a[mat].vc+=(Number(p['Valor da causa'])||0); a[mat].va+=(Number(p['Valor Atualizado'])||0); return a; },{});
+            const t = dados.length||1;
+            document.getElementById('summaryMateriaBody').innerHTML = Object.entries(m).sort((a,b)=>b[1].vc-a[1].vc).map(([mat,i])=>`<tr><td class="px-4 py-2 font-bold">${mat}</td><td class="px-4 py-2 text-center">${i.q}</td><td class="px-4 py-2 text-right">R$ ${i.vc.toLocaleString('pt-BR')}</td><td class="px-4 py-2 text-right text-green-600">R$ ${i.va.toLocaleString('pt-BR')}</td><td class="px-4 py-2 text-center">${((i.q/t)*100).toFixed(1)}%</td></tr>`).join('');
         }
+
+        // --- AS 24 COLUNAS EXATAS ---
+        const cols = ['Status','Polo','Número único','Data de Distribuição','Segmento','Ano Distribuição','Tipo de ação','EMPRESA DO GRUPO','Polo Ativo - Nome','Polo Passivo - Nome','Escritório Responsável pela Demanda','Matéria','Objeto','Assunto Principal do Processo','Valor da causa','Valor Atualizado','Valor em Garantia','Tipo de Garantia','Risk Assessment (probabilidade de PERDA)','UF','Tribunal','Valor de Condenação ou Acordo (casos encerrados)','Mês/Ano pagamento','Observação'];
 
         function renderizarTabela(dados) {
-            document.getElementById('processTableBody').innerHTML = dados.map(p => 
-                `<tr class="hover:bg-slate-50 transition-colors">${colunasBase.map(c => {
-                    let v = getValue(p, c) || '-'; 
-                    let cls = "px-4 py-3 truncate-cell text-slate-600";
-                    if(c.toLowerCase().includes('valor')) { v = 'R$ ' + getFloat(p, c).toLocaleString('pt-BR'); cls += " text-right font-semibold text-slate-800"; }
-                    if(c==='Status') v = `<span class="px-2.5 py-1 rounded-md bg-slate-100 font-bold text-[9px] uppercase tracking-wider">${v}</span>`;
-                    if(c==='Número único') cls += " text-blue-600 font-bold font-mono";
-                    return `<td class="${cls}" title="${String(getValue(p, c)||'-')}">${v}</td>`;
-                }).join('')}</tr>`
-            ).join('');
+            document.getElementById('processTableBody').innerHTML = dados.map(p => `<tr>${cols.map(c => {
+                let v = p[c] || '-'; let cls = "px-3 py-2 truncate-cell";
+                if(c==='Valor da causa' || c==='Valor Atualizado' || c.includes('Garantia') || c.includes('Condenação')) { v = 'R$ '+Number(p[c]||0).toLocaleString('pt-BR'); cls+=" text-right font-bold "+(c==='Valor Atualizado'?'text-green-600':'text-slate-700'); }
+                if(c==='Status') v = `<span class="px-2 py-0.5 rounded-full bg-gray-100 font-bold text-[9px] uppercase">${v}</span>`;
+                if(c==='Número único') cls+=" text-blue-600 font-bold font-mono";
+                return `<td class="${cls}" title="${String(p[c]||'-').replace(/"/g, '&quot;')}">${v}</td>`;
+            }).join('')}</tr>`).join('');
         }
 
-        // --- INTERFACE ---
-        function setFiltroDinamico(t, v) { filtrosDinamicos[t] = (filtrosDinamicos[t] === v) ? null : v; atualizarDashboard(); }
-        function limparFiltrosDinamicos() { filtrosDinamicos = { escritorio: null, uf: null, materia: null }; atualizarDashboard(); }
-        function atualizarBadges() {
-            const b = document.getElementById('filterBadges');
-            b.innerHTML = ''; let has = false;
-            const add = (l, v) => { if(v){ has=true; b.innerHTML += `<div class="text-[9px] bg-blue-500/20 text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-500/30 mb-1.5">${l}: ${v}</div>`; }};
-            add("Materia", filtrosDinamicos.materia); add("UF", filtrosDinamicos.uf); add("Escritório", filtrosDinamicos.escritorio);
-            document.getElementById('activeFiltersSection').classList.toggle('hidden', !has);
-        }
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('sidebar-hidden'); document.getElementById('sidebarToggleBtn').classList.toggle('hidden'); }
-        function toggleDropdown(id) { document.getElementById(id).classList.toggle('show'); }
-        function closeDropdowns(e) { if (!e.target.closest('.relative')) document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show')); }
-        function debounceSearch() { atualizarDashboard(); }
         function ordenarTabela(c) {
             const d = (ordenacaoAtual.coluna === c) ? -ordenacaoAtual.dir : 1;
             ordenacaoAtual = { coluna: c, dir: d };
-            DADOS_ORIGINAIS.sort((a,b) => {
-                let vA = getValue(a, c); let vB = getValue(b, c);
-                if(c.toLowerCase().includes('valor')) { vA = getFloat(a,c); vB = getFloat(b,c); return (vA-vB)*d; }
-                return String(vA).localeCompare(String(vB)) * d;
-            });
+            DADOS_ORIGINAIS.sort((a,b) => { let vA=a[c]||''; let vB=b[c]||''; if(!isNaN(vA) && !isNaN(vB)) return (vA-vB)*d; return String(vA).localeCompare(String(vB))*d; });
             atualizarDashboard();
         }
 
