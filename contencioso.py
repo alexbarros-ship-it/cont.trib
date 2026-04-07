@@ -1,11 +1,13 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import os
+import uvicorn
 import pandas as pd
 import numpy as np
+from fastapi import FastAPI, Response
+from fastapi.middleware.cors import CORSMiddleware
+import traceback
 
-app = FastAPI(title="API Contencioso GoGroup - Data Engine")
+app = FastAPI(title="GoGroup - BI API Public Link")
 
-# Habilita a comunicação com o Frontend HTML
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -13,84 +15,75 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Link da planilha exportada como CSV (Baseado no seu ID e GID)
+SHEET_ID = "1yMaNNFgxFJPO7U4I9th92dhM3Z3K5qIDWeqlrfh8LAM"
+GID = "1851867780"
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/export?format=csv&gid={GID}"
+
 df_global = pd.DataFrame()
 
 def limpar_valor_monetario(valor):
-    """ Função inteligente para converter qualquer formato de dinheiro do Excel num número matemático puro """
-    if pd.isna(valor):
+    if pd.isna(valor) or valor == '' or valor == '-':
         return 0.0
-    # Se já for um número (inteiro ou decimal), mantém-no
     if isinstance(valor, (int, float)):
         return float(valor)
-    
-    # Se for texto (string), remove R$, espaços e trata a pontuação brasileira
     if isinstance(valor, str):
-        v_str = valor.replace('R$', '').replace(' ', '').strip()
-        if v_str == '' or v_str == '-':
-            return 0.0
-        
-        # Se tiver ponto e vírgula (ex: 1.500.000,00) -> Remove pontos e troca vírgula por ponto
-        if '.' in v_str and ',' in v_str:
-            v_str = v_str.replace('.', '').replace(',', '.')
-        # Se tiver apenas vírgula (ex: 1500,00) -> Troca a vírgula por ponto
-        elif ',' in v_str:
-            v_str = v_str.replace(',', '.')
-        
+        # Remove R$, espaços e converte padrão BR para US
+        v_str = valor.replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.').strip()
         try:
             return float(v_str)
-        except ValueError:
+        except:
             return 0.0
-            
     return 0.0
 
 def load_data():
     global df_global
-    caminho_arquivo = r"H:\Meu Drive\Contencioso_Tributario\Contencioso_GoGroup.xlsx"
-    
     try:
-        # Lê o Excel e remove espaços vazios acidentais nos cabeçalhos
-        df = pd.read_excel(caminho_arquivo)
+        print(f"🔍 Conectando à planilha pública: {SHEET_ID}...")
+        # Lendo o CSV diretamente da URL do Google
+        df = pd.read_csv(CSV_URL)
+        
+        # Limpar nomes das colunas (remover espaços invisíveis)
         df.columns = df.columns.str.strip()
         
-        # 1. TRATAMENTO FINANCEIRO INTELIGENTE
-        # Identifica automaticamente qualquer coluna que remeta a valores
-        cols_financeiras = [col for col in df.columns if 'valor' in col.lower() or 'garantia' in col.lower() or 'condenação' in col.lower()]
-        
+        # Converter colunas financeiras
+        cols_financeiras = [
+            'Valor da causa', 'Valor Atualizado', 'Valor em Garantia', 
+            'Valor de Condenação ou Acordo (casos encerrados)'
+        ]
         for col in cols_financeiras:
-            df[col] = df[col].apply(limpar_valor_monetario)
-        
-        # 2. TRATAMENTO DE DATAS E ANOS
-        if "Data de Distribuição" in df.columns:
-            df["Data de Distribuição"] = pd.to_datetime(df["Data de Distribuição"], errors='coerce').dt.strftime('%Y-%m-%d').fillna("")
-            
-        for col_ano in ["Ano Distribuição", "Anos Distribuição"]:
-            if col_ano in df.columns:
-                 df[col_ano] = pd.to_numeric(df[col_ano], errors='coerce').fillna(0).astype(int).astype(str)
-                 df[col_ano] = df[col_ano].replace('0', '')
-
-        # 3. GARANTIA DE TEXTO NAS CLASSIFICAÇÕES
-        # Evita que campos vazios de texto originem erros de 'NaN' na filtragem do JavaScript
-        cols_texto = ["Risk Assessment (probabilidade de PERDA)", "Status", "Matéria", "UF"]
-        for col in cols_texto:
             if col in df.columns:
-                df[col] = df[col].astype(str).replace('nan', '')
+                df[col] = df[col].apply(limpar_valor_monetario)
+        
+        # Garantir que o Ano é numérico ou string limpa
+        if 'Ano Distribuição' in df.columns:
+            df['Ano Distribuição'] = pd.to_numeric(df['Ano Distribuição'], errors='coerce').fillna(0).astype(int)
 
-        # 4. LIMPEZA EXTREMA GERAL
-        df = df.replace([np.inf, -np.inf], np.nan)
-        df = df.fillna("")
-        
         df_global = df
-        print(f"✅ Servidor Pronto: {len(df_global)} processos carregados e tratados sem erros matemáticos.")
-        
+        print(f"✅ Sucesso: {len(df_global)} processos carregados via link público!")
+
     except Exception as e:
-        print(f"❌ Erro crítico ao ler o Excel: {e}")
+        print("❌ Erro ao ler link público:")
+        traceback.print_exc()
 
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
     load_data()
 
+@app.get("/")
+def health():
+    return {"status": "active", "rows": len(df_global), "source": "public_web_link"}
+
 @app.get("/api/dashboard")
-def get_all_data():
-    # Envia os dados encapsulados para o Frontend processar
-    registros = df_global.to_dict(orient="records")
-    return {"processos": registros}
+def get_data():
+    if df_global.empty:
+        load_data()
+    return {"processos": df_global.to_dict(orient="records")}
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return Response(content=b"", media_type="image/x-icon")
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
